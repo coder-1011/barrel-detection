@@ -1,0 +1,26 @@
+# Vendored / external deps - kept local-only
+3DTK/
+openni2_camera/
+
+# Notes & docs
+*.md
+memory/
+
+# Claude traces
+.claude/
+.claude*/
+CLAUDE.md
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+*.swp
