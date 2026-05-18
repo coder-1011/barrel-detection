@@ -1,0 +1,7 @@
+# Point-cloud data files - exclude from GitHub Linguist language stats
+# (.3d is misdetected as Roff/man-page; these are plain XYZ text)
+barrel_pipeline/data*/** linguist-vendored
+*.3d linguist-vendored
+*.pcd linguist-vendored
+*.pose linguist-vendored
+*.2d linguist-vendored
