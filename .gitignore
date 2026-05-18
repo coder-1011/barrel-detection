@@ -4,7 +4,11 @@ openni2_camera/
 
 # Notes & docs
 *.md
+!README.md
 memory/
+
+# Generated visualization output (kept local-only)
+barrel_detection_results.pdf
 
 # Claude traces
 .claude/
