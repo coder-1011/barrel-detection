@@ -9,6 +9,7 @@ memory/
 
 # Generated visualization output (kept local-only)
 barrel_detection_results.pdf
+barrel_detection_simple.pdf
 
 # Claude traces
 .claude/
