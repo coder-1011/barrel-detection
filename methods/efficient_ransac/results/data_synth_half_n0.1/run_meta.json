@@ -1,0 +1,15 @@
+{
+  "scene": "data_synth_half_n0.1",
+  "method": "efficient_ransac",
+  "timestamp": "2026-06-01T20:11:30",
+  "scene_dir": "/home/bharath/masters/data/synth/data_synth_half_n0.1",
+  "detector": "CGAL::Shape_detection::Efficient_RANSAC (Schnabel 2007), Plane+Cylinder",
+  "params": {
+    "epsilon": 0.006,
+    "cluster_epsilon": 0.02,
+    "min_points": 1500,
+    "normal_threshold": 0.85,
+    "probability": 0.05,
+    "seed": 42
+  }
+}

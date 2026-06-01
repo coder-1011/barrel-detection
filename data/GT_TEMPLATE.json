@@ -1,0 +1,26 @@
+{
+  "_comment": "Ground-truth template. Copy into data/<group>/<scene>/gt.json and fill in.",
+  "scene": "<scene-dir-name>",
+  "source": "real_xtion | isaac_sim | synthetic",
+  "sensor": "asus_xtion_pro",
+  "units": "m",
+  "frame": "camera_optical (x right, y down, z forward)",
+  "barrels": [
+    {
+      "id": 0,
+      "radius_m": 0.0,
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "center": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "height_m": null,
+      "occlusion_frac": null
+    }
+  ]
+}

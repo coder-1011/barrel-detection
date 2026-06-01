@@ -1,0 +1,25 @@
+{
+  "scene": "data_synth_full",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 0.047671784,
+  "detections": [
+    {
+      "radius_m": 0.0437322,
+      "axis": [
+        -0.000723253,
+        0.999971,
+        0.00761135
+      ],
+      "center": [
+        0.100189,
+        -0.0605083,
+        0.60084
+      ],
+      "extent_m": 0.406296,
+      "score": null,
+      "lateral_pts": 21600
+    }
+  ]
+}

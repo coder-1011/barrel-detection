@@ -1,0 +1,8 @@
+{
+  "scene": "data_synth_half",
+  "method": "3dtk_hough",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": null,
+  "detections": []
+}

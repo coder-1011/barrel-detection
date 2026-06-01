@@ -1,0 +1,5 @@
+loaded 21600 pts from data_synth_half_noisy [scan000.pcd (m)]
+1 candidate cluster(s)
+  cluster[0] n= 21600 fit_n= 21600  r=  3.85cm  axis=[-0.01 +1.00 +0.01]  inliers=19194  KEEP
+
+wrote 1 detection(s) -> /home/bharath/masters/methods/ransac_cylinder/results/data_synth_half_noisy/predictions.json  (0.64s)

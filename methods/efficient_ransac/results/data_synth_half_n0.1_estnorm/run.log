@@ -1,0 +1,6 @@
+wrote 21600 pts with normals -> /home/bharath/masters/methods/efficient_ransac/results/data_synth_half_n0.1_estnorm/input_xyzn.txt
+>> cgal_ransac eps=0.006 clusEps=0.02 minPts=1500 nThr=0.85 prob=0.05 seed=42
+loaded 21600 points with normals
+1 shape(s) detected
+>> detected 1 cylinder(s) in .034844102s
+CYL 0.0481074 0.0980614 -0.060375 0.602396 0.00475743 0.999174 -0.0403457 0.408754 21592

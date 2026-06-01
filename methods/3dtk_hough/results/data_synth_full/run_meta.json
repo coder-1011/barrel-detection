@@ -1,0 +1,12 @@
+{
+  "scene": "data_synth_full",
+  "method": "3dtk_hough",
+  "timestamp": "2026-05-29T11:25:45",
+  "input_scan": "/home/bharath/masters/data/synth/data_synth_full/scan000.3d",
+  "work_dir": "/home/bharath/masters/methods/3dtk_hough/results/data_synth_full",
+  "normals": "input scan already uos_normal (6 cols)",
+  "detector": "3DTK bin/detectCylinder -s 0 -e 0 -f uos_normal",
+  "cfg": "/home/bharath/masters/3DTK/include/detectCylinder/cylinderDetector.cfg",
+  "cfg_sha1": "4debbe1cc577",
+  "phantom_min_extent_cm": 10.0
+}

@@ -1,0 +1,563 @@
+\documentclass[10pt,a4paper]{article}
+
+% ----- encoding & layout -----
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[a4paper,margin=2cm]{geometry}
+\usepackage{microtype}
+\usepackage{parskip}
+
+% ----- tables -----
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage[table]{xcolor}
+\usepackage{ragged2e}
+\usepackage{pdflscape}
+
+% ----- misc -----
+\usepackage{pifont}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!45!black,citecolor=blue!50!black]{hyperref}
+
+% ----- header / footer -----
+\setlength{\headheight}{13pt}
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{\small Barrel / Cylinder Detection --- Methods Survey}
+\rhead{\small p.\,\thepage}
+\lfoot{\small \texttt{researchwrite/} --- living document}
+\rfoot{\small compiled 2026-05-30}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}
+
+% ----- rating colours (light fills, black text) -----
+\definecolor{cVH}{HTML}{81C784} % very high  - green
+\definecolor{cH}{HTML}{C5E1A5}  % high       - light green
+\definecolor{cMod}{HTML}{FFE082} % moderate  - amber
+\definecolor{cLM}{HTML}{FFCC80}  % low-mod   - orange
+\definecolor{cLow}{HTML}{EF9A9A} % low       - red
+
+% ----- star rating 1..5 -----
+\newcommand{\stars}[1]{%
+  \ifcase#1\or
+  \ding{72}\ding{73}\ding{73}\ding{73}\ding{73}\or
+  \ding{72}\ding{72}\ding{73}\ding{73}\ding{73}\or
+  \ding{72}\ding{72}\ding{72}\ding{73}\ding{73}\or
+  \ding{72}\ding{72}\ding{72}\ding{72}\ding{73}\or
+  \ding{72}\ding{72}\ding{72}\ding{72}\ding{72}\fi}
+
+% ragged-right fixed-width column
+\newcolumntype{R}[1]{>{\RaggedRight\arraybackslash}p{#1}}
+
+\begin{document}
+
+% =================== TITLE ===================
+\begin{center}
+  {\LARGE\bfseries Barrel / Cylinder Detection in 3D Point Clouds}\\[2pt]
+  {\large A Survey of Methods and their Suitability for Occluded Detection}\\[6pt]
+  {\normalsize Master's-thesis literature backbone \quad$\cdot$\quad Bharath \quad$\cdot$\quad 2026-05-30}\\[2pt]
+  {\small Living document --- regenerated as the method list and references evolve.}
+\end{center}
+\vspace{2pt}
+\hrule
+\vspace{8pt}
+
+% =================== 1. PURPOSE ===================
+\section{Purpose and scope}
+
+This document is the literature backbone for the thesis comparison of barrel/cylinder
+detection methods in 3D point clouds. The aim is \textbf{empirical and comparative}: to
+determine \emph{which methods detect barrels most accurately} --- particularly under
+occlusion and partial burial --- and to \emph{characterise the strengths, weaknesses, and
+operating regimes} of each method family.
+
+It is deliberately \textbf{not} committed to proving a single predetermined hypothesis.
+Any trade-offs we observe (for example, how precision and recall move as occlusion
+increases, or how camera+LiDAR fusion compares with LiDAR-only methods) are
+\emph{findings to be measured}, not assumptions to be defended.
+
+The comparison is made fair by a shared data / I/O contract: every method reads the same
+clouds and emits the same prediction schema, and a single evaluator scores them
+(precision / recall / F1, radius and centre error, axis-angle error, runtime, and
+annotation / training cost kept as a column so geometric and learned methods compare
+fairly). Ground-truthed data --- including the \emph{true per-barrel occlusion percentage}
+--- will come from NVIDIA Isaac Sim, with validation on a small set of real Asus Xtion
+scans. The current baseline is the 3DTK randomized-Hough \texttt{detectCylinder}.
+
+\textbf{Reading the survey.} Methods already named in the project plan are marked with a
+dagger~($\dagger$); the rest were surfaced by a literature search on 2026-05-30. Every
+method maps to one or more entries in the bibliography (\S6) via the short key in the
+\emph{Key refs} column.
+
+% =================== 2. RUBRIC ===================
+\section{How to read the occlusion-suitability rating}
+
+Each method carries a 1--5 rating for \textbf{suitability to occluded / partial-view
+barrel detection} --- the central difficulty of this thesis. The rating is an informed
+prior from the literature whose only job is to \emph{prioritise experiments}; the thesis
+will replace it with measured numbers. It weighs five criteria:
+
+\begin{enumerate}[leftmargin=1.6em,itemsep=1pt,topsep=2pt]
+  \item \textbf{Partial-evidence detection} --- can it fire from a partial arc or sparse returns?
+  \item \textbf{Robustness to fragmentation} --- does missing surface break its core mechanism (region growth, clustering, connectivity)?
+  \item \textbf{Learnability of occlusion} --- can occluded cases be learned from data, and is such data affordable here?
+  \item \textbf{Second-modality / completion support} --- does a camera or a completion stage recover the object when LiDAR is occluded?
+  \item \textbf{Localisation under clutter} --- can it separate adjacent / overlapping barrels?
+\end{enumerate}
+
+\noindent\textbf{Scale.}\quad
+\colorbox{cVH}{\textbf{5} Very High} purpose-built for occlusion \;\textbar\;
+\colorbox{cH}{\textbf{4} High} handles it well (often data-dependent) \;\textbar\;
+\colorbox{cMod}{\textbf{3} Moderate} partial views OK, degrades with heavy occlusion/clutter \;\textbar\;
+\colorbox{cLM}{\textbf{2} Low--Mod} fragile under occlusion \;\textbar\;
+\colorbox{cLow}{\textbf{1} Low} unsuited.
+
+% =================== 3. THE TABLE ===================
+\begin{landscape}
+\section{Methods comparison table}
+\footnotesize
+\setlength{\extrarowheight}{2.5pt}
+\renewcommand{\arraystretch}{1.05}
+
+\begin{longtable}{@{}R{0.5cm} R{3.3cm} R{6.7cm} R{2.2cm} R{7.0cm} R{2.5cm}@{}}
+\rowcolor{gray!35}
+\textbf{\#} & \textbf{Method} & \textbf{Core idea} & \textbf{Occlusion fit} & \textbf{Why (behaviour under occlusion / clutter)} & \textbf{Key refs}\\
+\endhead
+
+% ---- Group A ----
+\rowcolor{black!8}\multicolumn{6}{@{}l}{\textbf{A.\quad LiDAR-only --- classical / geometric}}\\
+1 & Euclidean clustering + per-cluster fit~$\dagger$ &
+Remove ground/planes, cluster the rest (DBSCAN/Euclidean), fit one cylinder per cluster. &
+\cellcolor{cLM}\stars{2}\newline Low--Mod &
+Occlusion and adjacency split or merge clusters; touching barrels collapse into one. Fast and simple, but the proposer is the weak link. \emph{(Project's current proposer.)} &
+project pipeline\\
+
+2 & Region growing + normal curvature~$\dagger$ &
+Grow surface regions under a smoothness / curvature constraint, then fit. &
+\cellcolor{cLM}\stars{2}\newline Low--Mod &
+Needs a contiguous smooth surface; occlusion fragments the shell into disconnected patches, giving broken / under-segmented regions. &
+Rabbani'06, Moradi'21\\
+
+3 & Randomized 2-step Hough --- 3DTK \texttt{detectCylinder} \emph{(baseline)}~$\dagger$ &
+2D Hough on the Gaussian sphere of normals for the axis direction, then 3D Hough for centre + radius. &
+\cellcolor{cMod}\stars{3}\newline Moderate &
+A partial arc still votes and axis voting tolerates partial views; but heavy occlusion thins the accumulator and clutter creates spurious peaks. Lock radius to the drum band; tune accumulator resolution + sampling. &
+Rabbani'05, Borrmann'11\\
+
+4 & RANSAC cylinder fit (PCL)~$\dagger$ &
+Sample minimal point+normal sets, hypothesise a cylinder, score inliers; PCA for axis. &
+\cellcolor{cMod}\stars{3}\newline Moderate &
+Tolerates outliers and fits from a partial arc, but inlier thresholds are noise-sensitive and clutter spawns competing hypotheses; needs a proposer to localise. &
+PCL; Nurunnabi'19\\
+
+5 & Efficient RANSAC --- multi-primitive &
+Accelerated RANSAC detecting planes / spheres / cylinders / cones / tori at once. &
+\cellcolor{cMod}\stars{3}\newline Moderate &
+Robust to heavy noise/outliers and scales well; partial cylinders detectable, but over-detects primitives, so it needs post-filtering to the barrel prior. &
+Schnabel'07\\
+
+6 & Robust least-squares cylinder fit \emph{(fit stage)} &
+Faithful / robust (M-estimator, robust PCA) least-squares fit of cylinder parameters to inliers. &
+\cellcolor{cMod}\stars{3}\newline Moderate &
+Degrades gracefully on partial arcs and resists outliers --- but it is a \emph{fit}, not a detector; quality is bounded by the proposer that hands it points. &
+Luk\'acs'98, Nurunnabi'19\\
+
+7 & Connectivity / projection-based detection &
+Project points along hemisphere directions; detect circular projections via connected components. Little tuning, arbitrary orientation. &
+\cellcolor{cMod}\stars{3}\newline Moderate &
+Noise-robust and parameter-light; circular-projection evidence survives partial views, but connected-component reasoning can break under fragmentation. &
+Ara\'ujo'20\\
+
+% ---- Group B ----
+\rowcolor{black!8}\multicolumn{6}{@{}l}{\textbf{B.\quad LiDAR-only --- learned}}\\
+8 & PointNet++ (segment $\to$ fit)~$\dagger$ &
+Hierarchical point-set network segments barrel points; metric fit recovers pose/radius. &
+\cellcolor{cH}\stars{4}\newline High &
+Learns partial-shape cues, so it can flag occluded barrels \emph{if trained on occluded examples} --- exactly BarrelNet's recipe. Cost: annotation + sim-to-real gap. &
+Qi'17; cf.\ Yan'24\\
+
+9 & VoteNet --- deep Hough voting &
+Seed points vote for object centres; cluster votes into proposals. &
+\cellcolor{cH}\stars{4}\newline High &
+Centre-voting is built for partial / occluded objects --- visible surface points still vote toward the hidden centroid. Needs 3D-box training labels. &
+Qi'19\\
+
+10 & Voxel / pillar detectors --- PointPillars, SECOND, PV-RCNN~$\dagger$ &
+Voxel/pillar encoder + sparse-conv backbone + detection head; PV-RCNN adds point-voxel refinement. &
+\cellcolor{cH}\stars{4}\newline High &
+Trained end-to-end on occlusion-rich benchmarks; learn to detect from partial evidence. Strong accuracy; cost = annotated data + compute. &
+Lang'19, Shi'20\\
+
+11 & CenterPoint --- center-based detection~$\dagger$ &
+Detect object centres as BEV heatmap peaks; regress box / size / orientation. &
+\cellcolor{cH}\stars{4}\newline High &
+The centre representation is robust to partial observation and crowding; SOTA-class on driving data. Same data / compute caveat. &
+Yin'21\\
+
+12 & BtcDet --- ``Behind the Curtain'' (occlusion-aware) &
+Learn shape priors, estimate occupancy in occluded / missed regions, complete shapes, then detect. &
+\cellcolor{cVH}\stars{5}\newline Very High &
+Purpose-built for occlusion --- explicitly reasons about what is hidden. Highest relevance to the occlusion question; higher engineering complexity. &
+Xu'22\\
+
+13 & Learned primitive fitting --- SPFN / Point2Cyl / PrimiTect &
+Predict per-point primitive membership/type/normals (SPFN), extrusion-cylinder decomposition (Point2Cyl), or continuous Hough voting (PrimiTect). &
+\cellcolor{cMod}\stars{3}\newline Moderate &
+Beat RANSAC on clean / CAD data and give principled cylinder params; partial-view + sim-to-real generalisation for field barrels is unproven. Point2Cyl targets CAD extrusions. &
+Li'19, Uy'22, Sommer'20\\
+
+14 & Shape completion $\to$ fit --- PCN \emph{(pre-stage)} &
+Complete the partial cloud (encoder-decoder), then fit / detect on the completed shell. &
+\cellcolor{cH}\stars{4}\newline High &
+Directly attacks occlusion by hallucinating the missing shell before fitting; adds a learned stage with its own failure modes and training needs. &
+Yuan'18\\
+
+% ---- Group C ----
+\rowcolor{black!8}\multicolumn{6}{@{}l}{\textbf{C.\quad Camera + LiDAR fusion}}\\
+15 & Camera-first frustum --- YOLO $\to$ frustum $\to$ fit; Frustum-PointNets / -ConvNet~$\dagger$ &
+2D image detector proposes a region; back-project to a 3D frustum; segment + fit inside it. &
+\cellcolor{cH}\stars{4}\newline High &
+The camera still sees a barrel when its LiDAR return is sparse / occluded $\Rightarrow$ strong recall under occlusion. Failure modes: object must be visible in-image, and extrinsic-calibration error degrades the frustum. &
+Qi'18, Wang'19\\
+
+16 & LiDAR-first $\to$ image verification~$\dagger$ &
+Generate 3D proposals from LiDAR, project to the image, verify / score with the 2D detector (decision-level fusion). &
+\cellcolor{cH}\stars{4}\newline High &
+Image confirmation suppresses false positives and rescues low-confidence detections; but the proposal still needs enough LiDAR points on the occluded object. &
+Pang'20 (CLOCs)\\
+
+17 & Point decoration --- PointPainting / PointAugmenting~$\dagger$ &
+Paint each LiDAR point with image semantics / CNN features, then run any LiDAR detector. &
+\cellcolor{cH}\stars{4}\newline High &
+Semantic painting separates barrels from clutter and helps thin returns; effectiveness still bounded by having points on the object and by calibration. &
+Vora'20\\
+
+18 & Deep multimodal fusion --- TransFusion / BEVFusion / EPNet / MVX-Net &
+Feature-level fusion of camera + LiDAR (transformer queries / unified BEV). &
+\cellcolor{cVH}\stars{5}\newline Very High &
+SOTA on occluded driving benchmarks and comparatively calibration-robust (TransFusion's soft association); cost = training data, compute, integration complexity. &
+Bai'22, Liu'23\\
+
+\end{longtable}
+
+\vspace{2pt}
+{\footnotesize $\dagger$ = method already named in the project plan (\texttt{CLAUDE.md} / memory). \quad
+\emph{(baseline)} = current working baseline. \quad Rating scale defined in \S2.}
+\end{landscape}
+
+% =================== 4. PRIOR WORK ===================
+\section{Closest prior work: occlusion and barrels specifically}
+
+A targeted search surfaced work sitting almost exactly on this thesis:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{BarrelNet} (Yan et al., OCEANS 2024) is the nearest neighbour: a
+  PointNet-style network trained on \emph{synthetically generated} cylinder point clouds
+  that explicitly model camera-viewpoint occlusion \emph{and} burial in the seafloor. It
+  regresses 6-DOF pose, radius, and a \emph{burial fraction}, and \emph{beats a classical
+  least-squares cylinder fit} on synthetic tests, with qualitative ROV-footage
+  generalisation at a Southern-California DDT-barrel dump site. This validates the core
+  thesis bet --- synthetic occluded / buried training plus comparison against a geometric
+  baseline --- and is the single most important paper to position against.
+
+  \item \textbf{Behind the Curtain / BtcDet} (Xu et al., AAAI 2022) makes occlusion a
+  first-class citizen for generic LiDAR detection: it learns shape priors and predicts
+  occupancy in occluded regions \emph{before} detecting. It is the strongest template for
+  an occlusion-aware learned detector here.
+
+  \item \textbf{Shape completion} (PCN, Yuan et al., 3DV 2018) is an orthogonal lever:
+  complete the occluded shell, \emph{then} fit --- a drop-in pre-stage for any geometric
+  method.
+
+  \item \textbf{Occlusion analysis} --- OccAM's Laser (Schinagl et al., CVPR 2022)
+  produces occlusion-based attribution maps for 3D detectors, useful for \emph{explaining}
+  why a method's recall falls as occlusion rises.
+
+  \item \textbf{Buried-object context beyond LiDAR} --- integrated geophysical surveys
+  (magnetometry / electromagnetic induction) detect buried steel drums where optical /
+  LiDAR sensing cannot. Out of scope as a detection method, but relevant when framing the
+  buried-barrel problem and its sensing limits.
+\end{itemize}
+
+\noindent\textbf{Takeaway.} Occlusion-aware learned detection and synthetic occluded
+training are established, and in the one published barrel-specific study a learned method
+beats classical fitting. The thesis should therefore treat a learned occlusion-aware
+method (a BarrelNet-style PointNet++, or BtcDet) as a \emph{serious contender} against the
+3DTK Hough baseline, not an afterthought --- while the geometric methods remain the
+zero-training reference point.
+
+% =================== 5. SHORTLIST ===================
+\section{Suggested shortlist for the comparison}
+
+Balancing relevance, occlusion-suitability, and implementation cost, a defensible first
+comparison set is:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt,topsep=2pt]
+  \item \textbf{Geometric baselines:} 3DTK randomized Hough \emph{(already running)} and a
+  RANSAC / efficient-RANSAC cylinder fit --- cheap, no training, the reference point.
+  \item \textbf{Learned LiDAR:} a PointNet++ / BarrelNet-style detector trained on
+  Isaac-Sim occluded / buried barrels; optionally BtcDet as the occlusion specialist.
+  \item \textbf{Fusion:} one camera-first frustum pipeline (YOLO $\to$ frustum $\to$ fit)
+  to probe recall under occlusion, with a calibration-perturbation analysis as the fusion
+  stress test.
+\end{itemize}
+
+\noindent This spans all three families, includes the occlusion specialist, and keeps the
+geometric reference --- enough to answer \emph{which method works best, and why, per
+occlusion regime}.
+
+% =================== 6. BIBLIOGRAPHY ===================
+\section{References (grouped, with links)}
+
+{\small
+
+\subsection*{A. Classical / geometric cylinder detection \& fitting}
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{[Rabbani'05]} T.~Rabbani, F.~van den Heuvel. \emph{Efficient Hough
+  Transform for Automatic Detection of Cylinders in Point Clouds.} ISPRS Workshop ``Laser
+  Scanning 2005''. \,(2-step Gaussian-sphere + 3D Hough --- the method 3DTK
+  \texttt{detectCylinder} implements.) \href{https://www.isprs.org/proceedings/XXXVI/3-W19/papers/060.pdf}{[pdf]}
+  \item \textbf{[Borrmann'11]} D.~Borrmann, J.~Elseberg, K.~Lingemann, A.~N\"uchter.
+  \emph{The 3D Hough Transform for Plane Detection in Point Clouds: A Review and a New
+  Accumulator Design.} 3D Research 2(2), 2011. \,(3DTK Hough lineage.)
+  \href{https://robotik.informatik.uni-wuerzburg.de/telematics/download/3dresearch2011.pdf}{[pdf]}
+  \item \textbf{[Schnabel'07]} R.~Schnabel, R.~Wahl, R.~Klein. \emph{Efficient RANSAC for
+  Point-Cloud Shape Detection.} Computer Graphics Forum 26(2):214--226, 2007.
+  \href{https://onlinelibrary.wiley.com/doi/10.1111/j.1467-8659.2007.01016.x}{[doi]}
+  \item \textbf{[Luk\'acs'98]} G.~Luk\'acs, R.~Martin, D.~Marshall. \emph{Faithful
+  Least-Squares Fitting of Spheres, Cylinders, Cones and Tori for Reliable Segmentation.}
+  ECCV 1998, LNCS 1406. \href{https://link.springer.com/chapter/10.1007/BFb0055697}{[link]}
+  \item \textbf{[Rabbani'06]} T.~Rabbani, F.~van den Heuvel, G.~Vosselman.
+  \emph{Segmentation of Point Clouds Using Smoothness Constraint.} ISPRS Commission~V
+  Symposium, 2006. \,(Region growing by normal smoothness.)
+  \item \textbf{[Nurunnabi'19]} A.~Nurunnabi, Y.~Sadahiro, R.~Lindenbergh, D.~Belton.
+  \emph{Robust Cylinder Fitting in Laser Scanning Point Cloud Data.} Measurement
+  138:632--651, 2019. \href{https://www.sciencedirect.com/science/article/abs/pii/S0263224119301046}{[link]}
+  \item \textbf{[Ara\'ujo'20]} A.~M.~C.~Ara\'ujo, M.~M.~Oliveira. \emph{Connectivity-based
+  Cylinder Detection in Unorganized Point Clouds.} Pattern Recognition 100:107161, 2020.
+  \href{https://www.sciencedirect.com/science/article/abs/pii/S0031320319304613}{[link]}
+  $\cdot$ \href{https://www.inf.ufrgs.br/~oliveira/pubs_files/CD/CD.html}{[code]}
+  \item \textbf{[Moradi'21]} S.~Moradi, D.~Laurendeau, C.~Gosselin. \emph{Multiple Cylinder
+  Extraction from Organized Point Clouds.} Sensors 21(22):7630, 2021.
+  \href{https://www.mdpi.com/1424-8220/21/22/7630}{[link]}
+\end{itemize}
+
+\subsection*{B. Learned LiDAR-only detectors}
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{[Qi'17]} C.~R.~Qi, L.~Yi, H.~Su, L.~J.~Guibas. \emph{PointNet++: Deep
+  Hierarchical Feature Learning on Point Sets in a Metric Space.} NeurIPS 2017.
+  \href{https://arxiv.org/abs/1706.02413}{[arXiv:1706.02413]}
+  \item \textbf{[Qi'19]} C.~R.~Qi, O.~Litany, K.~He, L.~J.~Guibas. \emph{Deep Hough Voting
+  for 3D Object Detection in Point Clouds (VoteNet).} ICCV 2019.
+  \href{https://arxiv.org/abs/1904.09664}{[arXiv:1904.09664]}
+  \item \textbf{[Lang'19]} A.~H.~Lang, S.~Vora, H.~Caesar, L.~Zhou, J.~Yang, O.~Beijbom.
+  \emph{PointPillars: Fast Encoders for Object Detection from Point Clouds.} CVPR 2019.
+  \href{https://arxiv.org/abs/1812.05784}{[arXiv:1812.05784]}
+  \item \textbf{[Shi'20]} S.~Shi, C.~Guo, L.~Jiang, et al. \emph{PV-RCNN: Point-Voxel
+  Feature Set Abstraction for 3D Object Detection.} CVPR 2020.
+  \href{https://arxiv.org/abs/1912.13192}{[arXiv:1912.13192]} \,(see also SECOND: Yan et
+  al., Sensors 2018, and PointRCNN: Shi et al., CVPR 2019.)
+  \item \textbf{[Yin'21]} T.~Yin, X.~Zhou, P.~Kr\"ahenb\"uhl. \emph{Center-based 3D Object
+  Detection and Tracking (CenterPoint).} CVPR 2021.
+  \href{https://arxiv.org/abs/2006.11275}{[arXiv:2006.11275]}
+  \item \textbf{[Xu'22]} Q.~Xu, Y.~Zhong, U.~Neumann. \emph{Behind the Curtain: Learning
+  Occluded Shapes for 3D Object Detection (BtcDet).} AAAI 2022.
+  \href{https://arxiv.org/abs/2112.02205}{[arXiv:2112.02205]}
+  \item \textbf{[OpenPCDet]} OpenPCDet --- open-source toolbox implementing SECOND,
+  PointPillars, PV-RCNN, CenterPoint, etc. \href{https://github.com/open-mmlab/OpenPCDet}{[github]}
+\end{itemize}
+
+\subsection*{C. Learned primitive fitting \& shape completion}
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{[Li'19]} L.~Li, M.~Sung, A.~Dubrovina, L.~Yi, L.~J.~Guibas.
+  \emph{Supervised Fitting of Geometric Primitives to 3D Point Clouds (SPFN).} CVPR 2019.
+  \href{https://arxiv.org/abs/1811.08988}{[arXiv:1811.08988]}
+  \item \textbf{[Uy'22]} M.~A.~Uy, Y.-Y.~Chang, M.~Sung, P.~Goel, J.~Lambourne, T.~Birdal,
+  L.~J.~Guibas. \emph{Point2Cyl: Reverse Engineering 3D Objects from Point Clouds to
+  Extrusion Cylinders.} CVPR 2022. \href{https://arxiv.org/abs/2112.09329}{[arXiv:2112.09329]}
+  \item \textbf{[Sommer'20]} C.~Sommer, Y.~Sun, E.~Bylow, D.~Cremers. \emph{PrimiTect:
+  Fast Continuous Hough Voting for Primitive Detection.} ICRA 2020.
+  \href{https://arxiv.org/abs/2005.07457}{[arXiv:2005.07457]}
+  \item \textbf{[Yuan'18]} W.~Yuan, T.~Khot, D.~Held, C.~Mertz, M.~Hebert. \emph{PCN: Point
+  Completion Network.} 3DV 2018. \href{https://arxiv.org/abs/1808.00671}{[arXiv:1808.00671]}
+\end{itemize}
+
+\subsection*{D. Camera--LiDAR fusion}
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{[Qi'18]} C.~R.~Qi, W.~Liu, C.~Wu, H.~Su, L.~J.~Guibas. \emph{Frustum
+  PointNets for 3D Object Detection from RGB-D Data.} CVPR 2018.
+  \href{https://arxiv.org/abs/1711.08488}{[arXiv:1711.08488]}
+  \item \textbf{[Wang'19]} Z.~Wang, K.~Jia. \emph{Frustum ConvNet: Sliding Frustums to
+  Aggregate Local Point-Wise Features for Amodal 3D Object Detection.} IROS 2019.
+  \href{https://arxiv.org/abs/1903.01864}{[arXiv:1903.01864]}
+  \item \textbf{[Vora'20]} S.~Vora, A.~H.~Lang, B.~Helou, O.~Beijbom. \emph{PointPainting:
+  Sequential Fusion for 3D Object Detection.} CVPR 2020.
+  \href{https://arxiv.org/abs/1911.10150}{[arXiv:1911.10150]} \,(see also PointAugmenting,
+  Wang et al., CVPR 2021.)
+  \item \textbf{[Sindagi'19]} V.~A.~Sindagi, Y.~Zhou, O.~Tuzel. \emph{MVX-Net: Multimodal
+  VoxelNet for 3D Object Detection.} ICRA 2019.
+  \href{https://arxiv.org/abs/1904.01649}{[arXiv:1904.01649]}
+  \item \textbf{[Huang'20]} T.~Huang, Z.~Liu, X.~Chen, X.~Bai. \emph{EPNet: Enhancing Point
+  Features with Image Semantics for 3D Object Detection.} ECCV 2020.
+  \href{https://arxiv.org/abs/2007.08856}{[arXiv:2007.08856]}
+  \item \textbf{[Pang'20]} S.~Pang, D.~Morris, H.~Radha. \emph{CLOCs: Camera-LiDAR Object
+  Candidates Fusion for 3D Object Detection.} IROS 2020.
+  \href{https://arxiv.org/abs/2009.00784}{[arXiv:2009.00784]}
+  \item \textbf{[Bai'22]} X.~Bai, Z.~Hu, X.~Zhu, et al. \emph{TransFusion: Robust
+  LiDAR-Camera Fusion for 3D Object Detection with Transformers.} CVPR 2022.
+  \href{https://arxiv.org/abs/2203.11496}{[arXiv:2203.11496]}
+  \item \textbf{[Liu'23]} Z.~Liu, H.~Tang, A.~Amini, et al. \emph{BEVFusion: Multi-Task
+  Multi-Sensor Fusion with Unified Bird's-Eye-View Representation.} ICRA 2023.
+  \href{https://arxiv.org/abs/2205.13542}{[arXiv:2205.13542]}
+\end{itemize}
+
+\subsection*{E. Occlusion-robust \& barrel / buried-object specific}
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{[Yan'24]} J.~Yan, C.~Talegaonkar, N.~Antipa, E.~Terrill, S.~Merrifield.
+  \emph{Pose Estimation of Buried Deep-Sea Objects using 3D Vision Deep Learning Models}
+  (BarrelNet). OCEANS 2024 --- Halifax. \href{https://arxiv.org/abs/2410.01061}{[arXiv:2410.01061]}
+  \,\textbf{--- closest prior work.}
+  \item \textbf{[Xu'22]} BtcDet --- ``Behind the Curtain'' (occlusion-aware detection);
+  listed under \S B above. \href{https://arxiv.org/abs/2112.02205}{[arXiv:2112.02205]}
+  \item \textbf{[Schinagl'22]} D.~Schinagl, G.~Krispel, H.~Possegger, P.~M.~Roth,
+  H.~Bischof. \emph{OccAM's Laser: Occlusion-based Attribution Maps for 3D Object
+  Detectors on LiDAR Data.} CVPR 2022. \href{https://arxiv.org/abs/2204.06577}{[arXiv:2204.06577]}
+  \item \textbf{[Geophys'10]} \emph{Integrated Geophysical Measurements on a Test Site for
+  Detection of Buried Steel Drums.} 2010. \,(Non-LiDAR buried-drum context: magnetometry /
+  EMI.) \href{https://arxiv.org/abs/1009.5555}{[arXiv:1009.5555]}
+\end{itemize}
+
+} % end \small
+
+\vspace{6pt}
+\hrule
+\vspace{4pt}
+{\footnotesize\emph{Citation note.} References were compiled via literature search on
+2026-05-30. Authors, venues, and arXiv identifiers were checked against the linked
+sources, but please re-verify each entry against its link before quoting it in the final
+thesis. This file lives in \texttt{researchwrite/} and is regenerated as the survey
+evolves; the companion index is the \texttt{researchwrite-materials} memory.}
+
+% =================== 7. IMPLEMENTATIONS ===================
+\clearpage
+\section{Off-the-shelf implementations (GitHub) --- what to reuse}
+
+The plan is to \textbf{reuse code, not reimplement}. For each method (keyed to the table
+in \S3) the table below gives the \emph{recommended} repository --- the most-starred,
+actively maintained option --- with lighter or alternative repos in \emph{Notes}. Star
+counts (\ding{72}), language and licence are as of 2026-05-30.
+
+\textbf{Two caveats.} (i)~\textbf{BarrelNet} [Yan'24], the closest prior work, has
+\emph{no public code release} --- it must be reproduced on top of a PointNet++ repo.
+(ii)~A few official repos are \emph{archived} (read-only on GitHub) but still compile and
+run.
+
+\vspace{4pt}
+\noindent\colorbox{cH!55}{%
+\begin{minipage}{\dimexpr\textwidth-2\fboxsep\relax}
+\textbf{Toolchain shortcut.}\; Standardise on
+\href{https://github.com/open-mmlab/OpenPCDet}{open-mmlab/OpenPCDet}. PointPillars,
+SECOND, PV-RCNN and CenterPoint all ship inside it; BtcDet is built on it; and CLOCs and
+the recommended PointPainting repo plug into it. Adopting one framework puts almost all
+the learned-LiDAR methods plus several fusion methods in a \emph{single} codebase --- little
+to no from-scratch work, one training/eval harness, and an easy bridge to the project's
+\texttt{predictions.json} contract.
+\end{minipage}}
+
+\begin{landscape}
+\footnotesize
+\setlength{\extrarowheight}{2.5pt}
+\renewcommand{\arraystretch}{1.05}
+
+\begin{longtable}{@{}R{3.5cm} R{5.0cm} R{1.2cm} R{2.7cm} R{9.6cm}@{}}
+\rowcolor{gray!35}
+\textbf{Method (cf.\ \S3)} & \textbf{Recommended GitHub repo} & \textbf{\ding{72} Stars} & \textbf{Lang / Licence} & \textbf{Notes (alternatives \& caveats)}\\
+\endhead
+
+\rowcolor{black!8}\multicolumn{5}{@{}l}{\textbf{A.\quad LiDAR-only --- classical / geometric}}\\
+Euclidean clustering + fit &
+\href{https://github.com/PointCloudLibrary/pcl}{PointCloudLibrary/pcl} & 11.0k & C++ / BSD &
+\texttt{EuclideanClusterExtraction} + \texttt{SACSegmentation} (cylinder model) in one library. Python route: \href{https://github.com/isl-org/Open3D}{isl-org/Open3D} (13.6k, MIT) for clustering, paired with a cylinder fit.\\
+
+Region growing + curvature &
+\href{https://github.com/PointCloudLibrary/pcl}{PointCloudLibrary/pcl} & 11.0k & C++ / BSD &
+\texttt{pcl::RegionGrowing} (smoothness / curvature constraint) --- the [Rabbani'06] method.\\
+
+Randomized 2-step Hough --- 3DTK \emph{(baseline)} &
+\href{https://github.com/JMUWRobotics/3DTK}{JMUWRobotics/3DTK} & 131 & C++ &
+\textbf{Already vendored.} Maintained mirror; provides \texttt{detectCylinder}.\\
+
+RANSAC cylinder fit &
+\href{https://github.com/leomariga/pyRANSAC-3D}{leomariga/pyRANSAC-3D} & 653 & Python / Apache &
+Pure-Python \texttt{Cylinder()} --- easiest pull for this stack. C++ reference: PCL \texttt{SACMODEL\_CYLINDER} (11.0k).\\
+
+Efficient RANSAC (multi-primitive) &
+\href{https://github.com/CGAL/cgal}{CGAL/cgal} & 5.9k & C++ / GPL+comm. &
+``Point-Set Shape Detection'' = the [Schnabel'07] algorithm. Lighter standalone: \href{https://github.com/LiangliangNan/Easy3D}{LiangliangNan/Easy3D} (1.6k, GPL).\\
+
+Robust least-squares cylinder fit &
+\href{https://github.com/xingjiepan/cylinder_fitting}{xingjiepan/cylinder\_fitting} & 53 & Python / BSD &
+pip-installable least-squares cylinder fit (Eberly). \emph{Fit stage only} --- needs a proposer.\\
+
+Connectivity / projection detection &
+\href{https://github.com/abner-math/CylinderDetection}{abner-math/CylinderDetection} & 39 & C++ / GPL &
+Author's official code for [Ara\'ujo'20].\\
+
+\rowcolor{black!8}\multicolumn{5}{@{}l}{\textbf{B.\quad LiDAR-only --- learned}}\\
+PointNet++ \,(basis for BarrelNet) &
+\href{https://github.com/yanx27/Pointnet_Pointnet2_pytorch}{yanx27/Pointnet\_Pointnet2\_pytorch} & 4.9k & Python / MIT &
+Most-popular PyTorch PointNet++. \textbf{BarrelNet [Yan'24] has no public code --- reproduce here.} Alt: \href{https://github.com/erikwijmans/Pointnet2_PyTorch}{erikwijmans/Pointnet2\_PyTorch} (1.8k).\\
+
+VoteNet &
+\href{https://github.com/facebookresearch/votenet}{facebookresearch/votenet} & 1.8k & Python / MIT &
+Official deep-Hough-voting detector. Repo \emph{archived} (read-only) but runs.\\
+
+PointPillars / SECOND / PV-RCNN &
+\href{https://github.com/open-mmlab/OpenPCDet}{open-mmlab/OpenPCDet} & 5.6k & Python / Apache &
+All three (+ Part-A2, etc.) in one maintained hub. Alt: \href{https://github.com/open-mmlab/mmdetection3d}{open-mmlab/mmdetection3d} (6.4k).\\
+
+CenterPoint &
+\href{https://github.com/tianweiy/CenterPoint}{tianweiy/CenterPoint} & 2.2k & Python / MIT &
+Official center-based detector; also bundled inside OpenPCDet.\\
+
+BtcDet --- occlusion-aware &
+\href{https://github.com/Xharlie/BtcDet}{Xharlie/BtcDet} & 201 & Python / Apache &
+Official; built on OpenPCDet 0.3.0 --- drops into the same toolchain. \textbf{Best occlusion specialist.}\\
+
+Learned primitive fitting &
+\href{https://github.com/lingxiaoli94/SPFN}{lingxiaoli94/SPFN} & 184 & Python / MIT &
+SPFN (multi-primitive). Also \href{https://github.com/mikacuy/point2cyl}{mikacuy/point2cyl} (65, extrusion cylinders) and \href{https://github.com/c-sommer/primitect}{c-sommer/primitect} (33, C++).\\
+
+Shape completion (PCN, pre-stage) &
+\href{https://github.com/wentaoyuan/pcn}{wentaoyuan/pcn} & 482 & Python / MIT &
+Official (TensorFlow). PyTorch reimpl: \href{https://github.com/qinglew/PCN-PyTorch}{qinglew/PCN-PyTorch} (212).\\
+
+\rowcolor{black!8}\multicolumn{5}{@{}l}{\textbf{C.\quad Camera + LiDAR fusion}}\\
+Camera-first frustum &
+\href{https://github.com/charlesq34/frustum-pointnets}{charlesq34/frustum-pointnets} & 1.7k & Python / Apache &
+Official Frustum-PointNets (TF). F-ConvNet: \href{https://github.com/Gorilla-Lab-SCUT/frustum-convnet}{Gorilla-Lab-SCUT/frustum-convnet} (247, PyTorch).\\
+
+LiDAR-first $\to$ image verification &
+\href{https://github.com/pangsu0613/CLOCs}{pangsu0613/CLOCs} & 405 & Python / MIT &
+Decision-level fusion on top of SECOND / PV-RCNN (OpenPCDet-compatible).\\
+
+Point decoration (PointPainting) &
+\href{https://github.com/Song-Jingyu/PointPainting}{Song-Jingyu/PointPainting} & 314 & Python / MIT &
+mmsegmentation + OpenPCDet, maintained. Alt: \href{https://github.com/AmrElsersy/PointPainting}{AmrElsersy/PointPainting} (170, real-time BiSeNetv2).\\
+
+Deep multimodal fusion &
+\href{https://github.com/mit-han-lab/bevfusion}{mit-han-lab/bevfusion} & 3.2k & Python / Apache &
+Most-popular fusion repo; \emph{archived} but runs. Alt: \href{https://github.com/XuyangBai/TransFusion}{XuyangBai/TransFusion} (760); MVX-Net via mmdetection3d (6.4k); \href{https://github.com/happinesslz/EPNet}{happinesslz/EPNet} (254).\\
+
+\end{longtable}
+\end{landscape}
+
+\noindent{\footnotesize Star counts are a popularity snapshot (GitHub API, 2026-05-30) and
+drift over time; ``archived'' repos are read-only but still clone/build. Where a method has
+several implementations, the most-starred actively-maintained one is recommended and the
+rest are listed as alternatives.}
+
+\end{document}
