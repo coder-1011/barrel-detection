@@ -1,0 +1,12 @@
+{
+  "scene": "data2_crop",
+  "method": "3dtk_hough",
+  "timestamp": "2026-06-01T21:08:26",
+  "input_scan": "/home/bharath/masters/data/real/data2_crop/scan000.3d",
+  "work_dir": "/home/bharath/masters/methods/3dtk_hough/results/data2_crop/normals_o3d",
+  "normals": "compute_normals_o3d.py --radius-cm 0.4 --max-nn 15",
+  "detector": "3DTK bin/detectCylinder -s 0 -e 0 -f uos_normal",
+  "cfg": "/home/bharath/masters/3DTK/include/detectCylinder/cylinderDetector.cfg",
+  "cfg_sha1": "4debbe1cc577",
+  "phantom_min_extent_cm": 10.0
+}

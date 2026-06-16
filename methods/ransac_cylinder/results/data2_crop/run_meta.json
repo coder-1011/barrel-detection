@@ -1,0 +1,12 @@
+{
+  "scene": "data2_crop",
+  "method": "ransac_cylinder",
+  "timestamp": "2026-06-01T21:08:29",
+  "scene_dir": "/home/bharath/masters/data/real/data2_crop",
+  "run_log": "/home/bharath/masters/methods/ransac_cylinder/results/data2_crop/run.log",
+  "detector": "methods/ransac_cylinder/detect.py",
+  "extra_args": [
+    "--no-crop"
+  ],
+  "pyransac3d_version": "0.6.0"
+}

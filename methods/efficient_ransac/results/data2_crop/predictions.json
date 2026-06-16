@@ -1,0 +1,25 @@
+{
+  "scene": "data2_crop",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 0.047893209,
+  "detections": [
+    {
+      "radius_m": 0.0330653,
+      "axis": [
+        0.00156052,
+        0.999998,
+        -0.00075795
+      ],
+      "center": [
+        0.102376,
+        -0.0612936,
+        0.629749
+      ],
+      "extent_m": 0.389814,
+      "score": null,
+      "lateral_pts": 26245
+    }
+  ]
+}
