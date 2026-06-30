@@ -131,8 +131,15 @@ manually segmenting barrels out of the `station1_pit_barrels` pile. The drums li
 **arbitrary orientations**, so GT is a full cylinder per barrel; we mark the region by
 hand and fit the geometry (see `common/fit_from_segments.py`).
 
-Run the container with the **live host `masters/` bind-mounted read-write at `/work`** so
-the cloud comes from the repo and exported segments land back on the host:
+**First, on the host, make a PLY** — the apt CloudCompare build has *no PCD reader*
+(PCD import needs the PCL plugin), but reads PLY natively:
+
+```bash
+.venv/bin/python common/pcd_to_ply.py data/real/station1_pit_barrels   # -> scan000.ply
+```
+
+Then run the container with the **live host `masters/` bind-mounted read-write at `/work`**
+so the cloud comes from the repo and exported segments land back on the host:
 
 ```bash
 sudo systemctl start docker
@@ -152,7 +159,8 @@ Open the viewer in a browser (or run yourself with the `!` prefix):
 ```
 
 In CloudCompare (renders via llvmpipe/CPU like `show`):
-1. Select the cloud in the DB tree.
+1. Select the cloud in the DB tree. (If it didn't auto-load: File > Open >
+   `/work/data/real/station1_pit_barrels/scan000.ply` — open the **.ply**, not the .pcd.)
 2. **Segment** tool (scissors icon): rotate to a good view, draw a polygon around **one
    barrel**, *Segment In*, then **save that piece** as ASCII to
    `/work/data/real/station1_pit_barrels/segments/barrel_00.xyz` (File > Save). Repeat per

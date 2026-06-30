@@ -14,7 +14,9 @@ export LIBGL_ALWAYS_SOFTWARE=1
 export GALLIUM_DRIVER=llvmpipe
 export QT_X11_NO_MITSHM=1          # avoid Qt MIT-SHM issues under Xvfb
 
-CLOUD="${1:-/work/data/real/station1_pit_barrels/scan000.pcd}"
+# NB the apt (jammy/universe) CloudCompare build has NO PCD reader — point it at a PLY
+# (convert on the host first with common/pcd_to_ply.py). CloudCompare reads PLY natively.
+CLOUD="${1:-/work/data/real/station1_pit_barrels/scan000.ply}"
 
 # Install CloudCompare once (jammy universe). No-op if already present.
 if ! command -v CloudCompare >/dev/null 2>&1 && ! command -v cloudcompare >/dev/null 2>&1; then
@@ -47,3 +49,4 @@ echo "Launching $CC on $CLOUD"
 sleep 1
 echo "Stack up: VNC :5901, noVNC http :6080, CloudCompare launched."
 echo "If the cloud didn't open, in CloudCompare: File > Open -> $CLOUD"
+echo "(apt CloudCompare can't read .pcd — use the .ply; make one with common/pcd_to_ply.py)"
