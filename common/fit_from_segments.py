@@ -112,6 +112,39 @@ def angular_coverage(P2, center):
     return float((2 * np.pi - gaps.max()) / (2 * np.pi))
 
 
+def extract_cylinder_ransac(pts, R, tol=0.035, iters=4000, seed=0):
+    """Pull the dominant fixed-radius-R cylinder out of a coarse crop (for no-mouse
+    box crops that catch clutter/neighbours). Axis = n_i x n_j of two points' normals;
+    center seeded from p_i +/- R*n_i; inliers = points within tol of the R-shell whose
+    normal is roughly radial. Returns the inlier mask."""
+    pc = o3d.geometry.PointCloud()
+    pc.points = o3d.utility.Vector3dVector(pts)
+    nn = pc.compute_nearest_neighbor_distance()
+    rr = max(3.0 * float(np.median(nn)), 0.05)
+    pc.estimate_normals(o3d.geometry.KDTreeSearchParamHybrid(radius=rr, max_nn=30))
+    N = np.asarray(pc.normals)
+    rng = np.random.default_rng(seed)
+    n = len(pts)
+    best = None
+    for _ in range(iters):
+        i, j = rng.integers(0, n, 2)
+        ax = np.cross(N[i], N[j]); na = np.linalg.norm(ax)
+        if na < 0.3:
+            continue
+        ax /= na
+        for s in (1, -1):
+            a0 = pts[i] + s * R * N[i]
+            d = pts - a0
+            perp = d - np.outer(d @ ax, ax)
+            rad = np.linalg.norm(perp, axis=1)
+            rdir = perp / np.where(rad[:, None] < 1e-9, 1e-9, rad[:, None])
+            inl = (np.abs(rad - R) < tol) & (np.abs(np.einsum('ij,ij->i', rdir, N)) > 0.7)
+            cnt = int(inl.sum())
+            if best is None or cnt > best[0]:
+                best = (cnt, inl)
+    return best[1] if best else np.ones(n, bool)
+
+
 def fit_segment(pts, R, hint=None):
     if hint is not None:
         axis = np.asarray(hint[1], float) - np.asarray(hint[0], float)
@@ -144,6 +177,10 @@ def main():
     ap.add_argument("--radius", type=float, default=0.286, help="drum radius m (200L=0.286)")
     ap.add_argument("--height", type=float, default=0.85, help="prior drum height m (200L~0.85)")
     ap.add_argument("--hints", default=None, help="JSON {stem: [[p1],[p2]]} axis hints")
+    ap.add_argument("--ransac", action="store_true",
+                    help="first extract the dominant R-cylinder from each (coarse) crop, "
+                         "then fit only its inliers — for boxes that caught clutter/neighbours")
+    ap.add_argument("--ransac-tol", type=float, default=0.035, help="R-shell inlier tol (m)")
     ap.add_argument("--out", default=None)
     ap.add_argument("--source", default="real_survey_lidar (CloudCompare segment + radius-locked fit)")
     args = ap.parse_args()
@@ -165,11 +202,16 @@ def main():
         if len(pts) < 20:
             print(f"  {stem}: only {len(pts)} pts — skipped")
             continue
+        nfull = len(pts)
+        if args.ransac and stem not in hints:
+            mask = extract_cylinder_ransac(pts, args.radius, tol=args.ransac_tol)
+            if mask.sum() >= 20:
+                pts = pts[mask]
         fit = fit_segment(pts, args.radius, hints.get(stem))
         c = fit["center"]; a = fit["axis"]
         occ = round(1.0 - fit["coverage"], 2)
-        src = "hint-axis" if stem in hints else "auto-axis"
-        print(f"  {stem}: n={fit['n']:5d} {src}  axis=[{a[0]:+.2f} {a[1]:+.2f} {a[2]:+.2f}]"
+        src = "hint-axis" if stem in hints else ("ransac" if args.ransac else "auto-axis")
+        print(f"  {stem}: n={fit['n']:5d}/{nfull} {src}  axis=[{a[0]:+.2f} {a[1]:+.2f} {a[2]:+.2f}]"
               f"  rms={fit['rms']*1000:5.1f}mm  cover={fit['coverage']:.2f} h={fit['height']:.2f}m")
         barrels.append(dict(
             id=i, radius_m=args.radius,

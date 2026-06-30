@@ -176,6 +176,10 @@ Then **on the host** (uses the project `.venv`, no GUI), fit GT from the segment
 # -> data/real/station1_pit_barrels/gt.json   (radius-locked cylinder fit, project schema)
 ```
 
+If a box was **coarse** (caught clutter or neighbour points — easy to do with no mouse),
+add **`--ransac`**: it first extracts the dominant R=0.286 m cylinder from each crop, then
+fits only those inliers. Per-barrel printout shows `n=<inliers>/<total>`.
+
 Score any method against it with `python3 eval/evaluate.py --method <name>`.
 
 ---

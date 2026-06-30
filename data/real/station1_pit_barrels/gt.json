@@ -1,0 +1,26 @@
+{
+  "scene": "station1_pit_barrels",
+  "source": "real_survey_lidar (CloudCompare segment + radius-locked fit)",
+  "sensor": "survey_lidar",
+  "units": "m",
+  "frame": "local_meters (de-offset site coords; z up)",
+  "barrels": [
+    {
+      "id": 0,
+      "radius_m": 0.286,
+      "axis": [
+        0.7531,
+        -0.5287,
+        -0.3915
+      ],
+      "center": [
+        0.3559,
+        2.1188,
+        -15.996
+      ],
+      "height_m": 1.112,
+      "occlusion_frac": 0.4,
+      "fit_rms_m": 0.0216
+    }
+  ]
+}
