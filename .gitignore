@@ -36,3 +36,6 @@ venv/
 # from the (committed) scan000.pcd, so neither needs to live in git.
 methods/*/bin/
 methods/efficient_ransac/results/*/input_xyzn.txt
+
+# Large raw survey scan kept local only (111M; redundant csv/zip/xyz) — not for GitHub
+data/real/station1_deployment1_scan8/
