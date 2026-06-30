@@ -123,6 +123,55 @@ left = orbit, right = zoom, middle = pan.
 
 ---
 
+## Annotation: segment barrels in CloudCompare (ground truth)
+
+The same container also runs **CloudCompare** (Ubuntu **jammy/universe** package — the
+base is 22.04, so it's a plain `apt install cloudcompare`, no AppImage/flatpak/snap) for
+manually segmenting barrels out of the `station1_pit_barrels` pile. The drums lie in
+**arbitrary orientations**, so GT is a full cylinder per barrel; we mark the region by
+hand and fit the geometry (see `common/fit_from_segments.py`).
+
+Run the container with the **live host `masters/` bind-mounted read-write at `/work`** so
+the cloud comes from the repo and exported segments land back on the host:
+
+```bash
+sudo systemctl start docker
+
+sudo docker rm -f 3dtk-annot 2>/dev/null
+sudo docker run -d --name 3dtk-annot --shm-size=2g -p 5901:5901 -p 6080:6080 \
+  --device /dev/dri -v ~/Projects/masters:/work \
+  3dtk-show:latest sleep infinity
+
+# Xvfb :99 + fluxbox + x11vnc + noVNC, installs cloudcompare on first run, opens the cloud
+sudo docker exec 3dtk-annot bash /work/docker-3dtk-show/start_annotate.sh
+```
+
+Open the viewer in a browser (or run yourself with the `!` prefix):
+```
+! xdg-open 'http://localhost:6080/vnc.html?autoconnect=1&resize=remote'
+```
+
+In CloudCompare (renders via llvmpipe/CPU like `show`):
+1. Select the cloud in the DB tree.
+2. **Segment** tool (scissors icon): rotate to a good view, draw a polygon around **one
+   barrel**, *Segment In*, then **save that piece** as ASCII to
+   `/work/data/real/station1_pit_barrels/segments/barrel_00.xyz` (File > Save). Repeat per
+   barrel (`barrel_01.xyz`, …).
+3. For heavily-occluded drums where the auto axis is unreliable, also note two points
+   along the barrel's length and add them to a `hints.json` (see `fit_from_segments.py`).
+
+Then **on the host** (uses the project `.venv`, no GUI), fit GT from the segments:
+```bash
+.venv/bin/python common/fit_from_segments.py \
+  --segments-dir data/real/station1_pit_barrels/segments \
+  --scene data/real/station1_pit_barrels            # [--hints hints.json]
+# -> data/real/station1_pit_barrels/gt.json   (radius-locked cylinder fit, project schema)
+```
+
+Score any method against it with `python3 eval/evaluate.py --method <name>`.
+
+---
+
 ## From scratch (full rebuild — reproducible)
 
 ```bash
