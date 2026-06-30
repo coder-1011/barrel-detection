@@ -1,0 +1,117 @@
+{
+  "scene": "station1_pit_barrels",
+  "method": "cap_disc_prototype",
+  "note": "vertical 200L drums (r=0.286m) seen from above; cap-top DBSCAN; NOT validated (no GT)",
+  "drum_radius_assumed_m": 0.286,
+  "n_candidates": 12,
+  "candidates": [
+    {
+      "center": [
+        1.951,
+        0.656,
+        -15.068
+      ],
+      "cap_pts": 226,
+      "cap_diam": 0.548
+    },
+    {
+      "center": [
+        1.002,
+        0.232,
+        -14.996
+      ],
+      "cap_pts": 205,
+      "cap_diam": 0.624
+    },
+    {
+      "center": [
+        1.315,
+        1.385,
+        -15.511
+      ],
+      "cap_pts": 205,
+      "cap_diam": 0.515
+    },
+    {
+      "center": [
+        -0.459,
+        -0.307,
+        -15.328
+      ],
+      "cap_pts": 99,
+      "cap_diam": 0.489
+    },
+    {
+      "center": [
+        2.359,
+        -2.201,
+        -14.652
+      ],
+      "cap_pts": 85,
+      "cap_diam": 0.481
+    },
+    {
+      "center": [
+        0.346,
+        0.386,
+        -15.501
+      ],
+      "cap_pts": 84,
+      "cap_diam": 0.353
+    },
+    {
+      "center": [
+        0.809,
+        1.941,
+        -15.875
+      ],
+      "cap_pts": 84,
+      "cap_diam": 0.593
+    },
+    {
+      "center": [
+        -1.226,
+        -1.058,
+        -15.483
+      ],
+      "cap_pts": 71,
+      "cap_diam": 0.553
+    },
+    {
+      "center": [
+        4.396,
+        0.399,
+        -15.677
+      ],
+      "cap_pts": 65,
+      "cap_diam": 0.449
+    },
+    {
+      "center": [
+        3.033,
+        -1.761,
+        -14.809
+      ],
+      "cap_pts": 62,
+      "cap_diam": 0.562
+    },
+    {
+      "center": [
+        3.422,
+        1.655,
+        -15.89
+      ],
+      "cap_pts": 37,
+      "cap_diam": 0.398
+    },
+    {
+      "center": [
+        3.458,
+        -1.068,
+        -14.455
+      ],
+      "cap_pts": 36,
+      "cap_diam": 0.412
+    }
+  ]
+}

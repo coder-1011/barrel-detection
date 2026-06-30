@@ -70,6 +70,13 @@ Both live as siblings of `barrel_pipeline/` in the working tree:
 
 Conversion is handled inside each script; raw `cylinder.2d` reads are in cm.
 
+## Additional data
+
+- `data/real/station1_deployment1_scan8/` — a separate survey/HV LiDAR scan of
+  **occluded barrels** (raw `Station-1_Deployment-1_HV-Scan 8.csv`, ~1.23M `x,y,z`
+  points, site-scale coordinates). Not yet converted into this pipeline's
+  `scan000.{pcd,3d,pose}` format — see `CLAUDE.md` for conversion notes.
+
 ## Notes
 
 - `cylinder.2d` may contain phantom duplicates (low lateral-pt counts, short

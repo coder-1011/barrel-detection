@@ -1,4 +1,4 @@
-WARN: Directory /home/bharath/masters/methods/3dtk_hough/results/data_synth_full/detectCylinder exists already. Contents will be overwriten
+WARN: Directory /home/bharath/Projects/masters/methods/3dtk_hough/results/data_synth_full/detectCylinder exists already. Contents will be overwriten
 Read Parameters from File: include/detectCylinder/cylinderDetector.cfg
 paraId: ## value: Tuned
 paraId: ## value: for
