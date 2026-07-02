@@ -1,0 +1,16 @@
+{
+  "scene": "station1_pit_barrels_seg00",
+  "method": "ransac_cylinder",
+  "timestamp": "2026-06-30T18:59:07",
+  "scene_dir": "/home/bharath/Projects/masters/data/real/station1_pit_barrels_seg00",
+  "run_log": "/home/bharath/Projects/masters/methods/ransac_cylinder/results/station1_pit_barrels_seg00/run.log",
+  "detector": "methods/ransac_cylinder/detect.py",
+  "extra_args": [
+    "--no-crop",
+    "--r-min",
+    "0.10",
+    "--r-max",
+    "0.40"
+  ],
+  "pyransac3d_version": "0.6.0"
+}

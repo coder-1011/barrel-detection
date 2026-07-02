@@ -1,0 +1,5 @@
+loaded 3826 pts from station1_pit_barrels_seg00 [scan000.pcd (m)]
+1 candidate cluster(s)
+  cluster[0] n=  3826 fit_n=  3738  r= 31.41cm  axis=[-0.66 +0.73 +0.20]  fit_err=1.11e+01  KEEP
+
+wrote 1 detection(s) -> /home/bharath/Projects/masters/methods/ls_cylinder/results/station1_pit_barrels_seg00/predictions.json  (7.10s)

@@ -1,0 +1,8 @@
+{
+  "scene": "station1_pit_barrels_seg00",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 0.036106743,
+  "detections": []
+}

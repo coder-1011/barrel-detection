@@ -1,0 +1,16 @@
+{
+  "scene": "station1_pit_barrels_seg00",
+  "method": "efficient_ransac",
+  "timestamp": "2026-06-30T18:59:41",
+  "scene_dir": "/home/bharath/Projects/masters/data/real/station1_pit_barrels_seg00",
+  "run_log": "/home/bharath/Projects/masters/methods/efficient_ransac/results/station1_pit_barrels_seg00/run.log",
+  "detector": "CGAL::Shape_detection::Efficient_RANSAC (Schnabel 2007), Plane+Cylinder",
+  "params": {
+    "epsilon": 0.02,
+    "cluster_epsilon": 0.06,
+    "min_points": 300,
+    "normal_threshold": 0.8,
+    "probability": 0.01,
+    "seed": 42
+  }
+}
