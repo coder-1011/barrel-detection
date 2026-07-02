@@ -1,26 +1,456 @@
 {
-  "scene": "station1_pit_barrels",
-  "source": "real_survey_lidar (CloudCompare segment + radius-locked fit)",
-  "sensor": "survey_lidar",
-  "units": "m",
-  "frame": "local_meters (de-offset site coords; z up)",
-  "barrels": [
-    {
-      "id": 0,
-      "radius_m": 0.286,
-      "axis": [
-        0.7531,
-        -0.5287,
-        -0.3915
-      ],
-      "center": [
-        0.3559,
-        2.1188,
-        -15.996
-      ],
-      "height_m": 1.112,
-      "occlusion_frac": 0.4,
-      "fit_rms_m": 0.0216
-    }
-  ]
+ "scene": "station1_pit_barrels",
+ "source": "real_survey_lidar (annotation pipeline + verified detector candidates)",
+ "sensor": "survey_lidar",
+ "units": "m",
+ "frame": "local_meters (de-offset site coords; z up)",
+ "partial": true,
+ "note": "PARTIAL ground truth: 21 human-verified drums (CloudCompare review of detector candidates, 2026-07-02), but the pile contains MORE unannotated drums (user estimate: only ~30% detected). Use as positive training/eval samples; do NOT treat detections on unlabeled drums as false positives. id 0 is the original 2-coaxial-drum annotation (h=1.11 m). Detector-fit axes/centers are radius-locked RANSAC fits, typical center accuracy a few cm; per-point instance labels in candidates/point_labels.npz.",
+ "drum_prior": {
+  "radius_m": 0.286,
+  "nominal_height_m": 0.85
+ },
+ "barrels": [
+  {
+   "id": 0,
+   "radius_m": 0.286,
+   "axis": [
+    0.7531,
+    -0.5287,
+    -0.3915
+   ],
+   "center": [
+    0.3559,
+    2.1188,
+    -15.996
+   ],
+   "height_m": 1.112,
+   "occlusion_frac": 0.4,
+   "fit_rms_m": 0.0216,
+   "source": "CloudCompare segment + radius-locked fit",
+   "provenance": "annotation-fit (absorbs D22)",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 651
+  },
+  {
+   "id": 1,
+   "radius_m": 0.286,
+   "axis": [
+    0.635,
+    0.4381,
+    -0.6363
+   ],
+   "center": [
+    0.7088,
+    2.4149,
+    -15.66
+   ],
+   "height_m": 0.8,
+   "occlusion_frac": 0.68,
+   "fit_rms_m": 0.0132,
+   "source": "fixed-R sliding-window RANSAC candidate D40",
+   "provenance": "detector, GT-adjacent",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 115
+  },
+  {
+   "id": 2,
+   "radius_m": 0.286,
+   "axis": [
+    0.8545,
+    0.49,
+    -0.1724
+   ],
+   "center": [
+    0.5078,
+    1.6576,
+    -15.6366
+   ],
+   "height_m": 1.1,
+   "occlusion_frac": 0.53,
+   "fit_rms_m": 0.0167,
+   "source": "fixed-R sliding-window RANSAC candidate D16",
+   "provenance": "detector, GT-adjacent",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 612
+  },
+  {
+   "id": 3,
+   "radius_m": 0.286,
+   "axis": [
+    -0.529,
+    -0.025,
+    -0.8482
+   ],
+   "center": [
+    1.1697,
+    1.3499,
+    -15.7875
+   ],
+   "height_m": 0.784,
+   "occlusion_frac": 0.44,
+   "fit_rms_m": 0.0157,
+   "source": "fixed-R sliding-window RANSAC candidate D2",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 1366
+  },
+  {
+   "id": 4,
+   "radius_m": 0.286,
+   "axis": [
+    0.8311,
+    0.4742,
+    -0.2904
+   ],
+   "center": [
+    0.5119,
+    0.4535,
+    -15.8684
+   ],
+   "height_m": 1.072,
+   "occlusion_frac": 0.41,
+   "fit_rms_m": 0.0131,
+   "source": "fixed-R sliding-window RANSAC candidate D3",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 1830
+  },
+  {
+   "id": 5,
+   "radius_m": 0.286,
+   "axis": [
+    0.0631,
+    -0.9638,
+    0.259
+   ],
+   "center": [
+    1.7821,
+    0.583,
+    -14.8278
+   ],
+   "height_m": 0.811,
+   "occlusion_frac": 0.51,
+   "fit_rms_m": 0.0297,
+   "source": "fixed-R sliding-window RANSAC candidate D5",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 947
+  },
+  {
+   "id": 6,
+   "radius_m": 0.286,
+   "axis": [
+    -0.2969,
+    0.1719,
+    0.9393
+   ],
+   "center": [
+    2.1353,
+    0.5776,
+    -15.4452
+   ],
+   "height_m": 1.05,
+   "occlusion_frac": 0.56,
+   "fit_rms_m": 0.0228,
+   "source": "fixed-R sliding-window RANSAC candidate D15",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 723
+  },
+  {
+   "id": 7,
+   "radius_m": 0.286,
+   "axis": [
+    -0.4623,
+    0.8814,
+    0.0972
+   ],
+   "center": [
+    -0.4443,
+    -0.4107,
+    -15.6116
+   ],
+   "height_m": 0.985,
+   "occlusion_frac": 0.16,
+   "fit_rms_m": 0.0138,
+   "source": "fixed-R sliding-window RANSAC candidate D21",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 656
+  },
+  {
+   "id": 8,
+   "radius_m": 0.286,
+   "axis": [
+    -0.1843,
+    -0.4094,
+    0.8936
+   ],
+   "center": [
+    3.3551,
+    -1.0202,
+    -14.9402
+   ],
+   "height_m": 1.2,
+   "occlusion_frac": 0.12,
+   "fit_rms_m": 0.0167,
+   "source": "fixed-R sliding-window RANSAC candidate D24",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 575
+  },
+  {
+   "id": 9,
+   "radius_m": 0.286,
+   "axis": [
+    0.8276,
+    0.5301,
+    -0.1845
+   ],
+   "center": [
+    3.1416,
+    -1.7396,
+    -15.117
+   ],
+   "height_m": 1.2,
+   "occlusion_frac": 0.54,
+   "fit_rms_m": 0.0181,
+   "source": "fixed-R sliding-window RANSAC candidate D31",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 473
+  },
+  {
+   "id": 10,
+   "radius_m": 0.286,
+   "axis": [
+    0.696,
+    -0.717,
+    -0.04
+   ],
+   "center": [
+    2.2591,
+    -2.0207,
+    -14.9136
+   ],
+   "height_m": 1.2,
+   "occlusion_frac": 0.23,
+   "fit_rms_m": 0.0139,
+   "source": "fixed-R sliding-window RANSAC candidate D37",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 437
+  },
+  {
+   "id": 11,
+   "radius_m": 0.286,
+   "axis": [
+    -0.5899,
+    0.7721,
+    0.2363
+   ],
+   "center": [
+    3.3607,
+    1.6723,
+    -15.6003
+   ],
+   "height_m": 0.775,
+   "occlusion_frac": 0.51,
+   "fit_rms_m": 0.0152,
+   "source": "fixed-R sliding-window RANSAC candidate D38",
+   "provenance": "detector+cap agreement",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 350
+  },
+  {
+   "id": 12,
+   "radius_m": 0.286,
+   "axis": [
+    0.7983,
+    0.3015,
+    0.5213
+   ],
+   "center": [
+    1.3412,
+    0.3323,
+    -15.1242
+   ],
+   "height_m": 1.2,
+   "occlusion_frac": 0.4,
+   "fit_rms_m": 0.0187,
+   "source": "fixed-R sliding-window RANSAC candidate D1",
+   "provenance": "detector wall-fit",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 3547
+  },
+  {
+   "id": 13,
+   "radius_m": 0.286,
+   "axis": [
+    0.4824,
+    -0.5014,
+    -0.7182
+   ],
+   "center": [
+    2.1051,
+    1.7011,
+    -15.7485
+   ],
+   "height_m": 0.956,
+   "occlusion_frac": 0.16,
+   "fit_rms_m": 0.0181,
+   "source": "fixed-R sliding-window RANSAC candidate D4",
+   "provenance": "detector wall-fit",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 1145
+  },
+  {
+   "id": 14,
+   "radius_m": 0.286,
+   "axis": [
+    0.6652,
+    0.0784,
+    0.7425
+   ],
+   "center": [
+    1.0761,
+    -0.4596,
+    -15.3902
+   ],
+   "height_m": 1.2,
+   "occlusion_frac": 0.34,
+   "fit_rms_m": 0.0172,
+   "source": "fixed-R sliding-window RANSAC candidate D6",
+   "provenance": "detector wall-fit",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 1412
+  },
+  {
+   "id": 15,
+   "radius_m": 0.286,
+   "axis": [
+    -0.0597,
+    -0.6174,
+    0.7844
+   ],
+   "center": [
+    0.3769,
+    0.984,
+    -15.8073
+   ],
+   "height_m": 1.161,
+   "occlusion_frac": 0.09,
+   "fit_rms_m": 0.0148,
+   "source": "fixed-R sliding-window RANSAC candidate D7",
+   "provenance": "detector wall-fit",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 894
+  },
+  {
+   "id": 16,
+   "radius_m": 0.286,
+   "axis": [
+    0.6883,
+    0.3017,
+    -0.6597
+   ],
+   "center": [
+    2.4122,
+    -1.5167,
+    -14.5068
+   ],
+   "height_m": 0.992,
+   "occlusion_frac": 0.09,
+   "fit_rms_m": 0.0178,
+   "source": "fixed-R sliding-window RANSAC candidate D9",
+   "provenance": "detector wall-fit",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 792
+  },
+  {
+   "id": 17,
+   "radius_m": 0.286,
+   "axis": [
+    0.9227,
+    -0.3579,
+    0.1434
+   ],
+   "center": [
+    1.6232,
+    1.9479,
+    -15.6764
+   ],
+   "height_m": 1.2,
+   "occlusion_frac": 0.18,
+   "fit_rms_m": 0.0141,
+   "source": "fixed-R sliding-window RANSAC candidate D11",
+   "provenance": "detector wall-fit",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 622
+  },
+  {
+   "id": 18,
+   "radius_m": 0.286,
+   "axis": [
+    0.2106,
+    0.5386,
+    0.8158
+   ],
+   "center": [
+    1.5681,
+    -1.1615,
+    -14.6223
+   ],
+   "height_m": 1.079,
+   "occlusion_frac": 0.18,
+   "fit_rms_m": 0.0148,
+   "source": "fixed-R sliding-window RANSAC candidate D19",
+   "provenance": "detector wall-fit",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 572
+  },
+  {
+   "id": 19,
+   "radius_m": 0.286,
+   "axis": [
+    0.6544,
+    -0.0531,
+    -0.7543
+   ],
+   "center": [
+    1.4351,
+    -0.5158,
+    -14.9853
+   ],
+   "height_m": 1.051,
+   "occlusion_frac": 0.1,
+   "fit_rms_m": 0.0154,
+   "source": "fixed-R sliding-window RANSAC candidate D20",
+   "provenance": "detector wall-fit",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 648
+  },
+  {
+   "id": 20,
+   "radius_m": 0.286,
+   "axis": [
+    -0.0743,
+    -0.2075,
+    0.9754
+   ],
+   "center": [
+    1.0869,
+    0.9165,
+    -15.4978
+   ],
+   "height_m": 1.173,
+   "occlusion_frac": 0.18,
+   "fit_rms_m": 0.0242,
+   "source": "fixed-R sliding-window RANSAC candidate D0",
+   "provenance": "detector wall-fit (near scan nadir)",
+   "verified": "human (CloudCompare, 2026-07-02)",
+   "n_wall_points": 3503
+  }
+ ]
 }
