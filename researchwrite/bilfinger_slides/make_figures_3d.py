@@ -166,9 +166,9 @@ GREEN = (0.18, 0.75, 0.25)
 
 def main():
     # ---- REAL: cloud + detection (ransac) ----
-    sc = P("data", "real", "data2_crop")
+    sc = P("data", "real", "xtion02_crop")
     pcd = color_by_depth(load_cloud(sc)).voxel_down_sample(0.005)
-    dets = read_dets(P("methods", "ransac_cylinder", "results", "data2_crop",
+    dets = read_dets(P("methods", "ransac_cylinder", "results", "xtion02_crop",
                        "predictions.json"), "detections", "radius_m", "extent_m")
     geoms = [(pcd, "cloud")]
     for cen, ax, r_, h_ in dets:
@@ -178,12 +178,12 @@ def main():
            direction=(0.4, -0.5, -1.0), dist=0.5, lookat=ctr)
 
     # ---- SYNTH: cloud + detection (red) + gt (green outer shell) ----
-    sc = P("data", "synth", "data_synth_half")
+    sc = P("data", "synth", "synth_half")
     pcd = color_by_depth(load_cloud(sc)).voxel_down_sample(0.005)
     dets = read_dets(P("methods", "ransac_cylinder", "results",
-                       "data_synth_half", "predictions.json"),
+                       "synth_half", "predictions.json"),
                      "detections", "radius_m", "extent_m")
-    gts = read_dets(P("data", "synth", "data_synth_half", "gt.json"),
+    gts = read_dets(P("data", "synth", "synth_half", "gt.json"),
                     "barrels", "radius_m", "height_m")
     geoms = [(pcd, "cloud")]
     for cen, ax, r_, h_ in dets:
@@ -194,7 +194,7 @@ def main():
            direction=(0.45, -0.45, -1.0), dist=0.55, lookat=ctr)
 
     # ---- REAL raw cloud only ----
-    sc = P("data", "real", "data2_crop")
+    sc = P("data", "real", "xtion02_crop")
     pcd = color_by_depth(load_cloud(sc))
     render([(pcd, "cloud")], os.path.join(ASSETS, "real_3d_raw.png"),
            direction=(0.4, -0.5, -1.0), dist=0.5, lookat=pcd.get_center())

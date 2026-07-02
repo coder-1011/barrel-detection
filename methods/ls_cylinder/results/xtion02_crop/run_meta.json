@@ -1,0 +1,12 @@
+{
+  "scene": "xtion02_crop",
+  "method": "ls_cylinder",
+  "timestamp": "2026-06-01T21:08:37",
+  "scene_dir": "/home/bharath/masters/data/real/xtion02_crop",
+  "run_log": "/home/bharath/masters/methods/ls_cylinder/results/xtion02_crop/run.log",
+  "detector": "methods/ls_cylinder/detect.py",
+  "extra_args": [
+    "--no-crop"
+  ],
+  "cylinder_fitting_version": "1.1.4"
+}

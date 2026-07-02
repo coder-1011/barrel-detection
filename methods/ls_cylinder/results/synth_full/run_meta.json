@@ -1,0 +1,10 @@
+{
+  "scene": "synth_full",
+  "method": "ls_cylinder",
+  "timestamp": "2026-06-01T19:51:59",
+  "scene_dir": "/home/bharath/masters/data/synth/synth_full",
+  "run_log": "/home/bharath/masters/methods/ls_cylinder/results/synth_full/run.log",
+  "detector": "methods/ls_cylinder/detect.py",
+  "extra_args": [],
+  "cylinder_fitting_version": "1.1.4"
+}

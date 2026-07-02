@@ -14,8 +14,8 @@
 # Lukacs-style geometric-distance minimisation). See detect.py.
 #
 # Usage (from anywhere):
-#   methods/ls_cylinder/run_detection.sh data/synth/data_synth_half
-#   methods/ls_cylinder/run_detection.sh data/real/data3_crop --crop
+#   methods/ls_cylinder/run_detection.sh data/synth/synth_half
+#   methods/ls_cylinder/run_detection.sh data/real/xtion03_crop --crop
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

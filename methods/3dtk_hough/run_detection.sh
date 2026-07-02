@@ -15,8 +15,8 @@
 # detectCylinder reads its cfg relative to the cwd, so we cd into 3DTK to run it.
 #
 # Usage (from anywhere):
-#   methods/3dtk_hough/run_detection.sh data/real/data3_crop
-#   methods/3dtk_hough/run_detection.sh data/synth/data_synth_half --radius-cm 0.4 --max-nn 15
+#   methods/3dtk_hough/run_detection.sh data/real/xtion03_crop
+#   methods/3dtk_hough/run_detection.sh data/synth/synth_half --radius-cm 0.4 --max-nn 15
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

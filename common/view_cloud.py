@@ -12,9 +12,9 @@ Cloud is meters; --pcd accepts a .pcd (m) or a .3d (cm, auto /100).
 Usage:
   # any method's predictions vs ground truth (the common case now):
   python3 common/view_cloud.py \
-      --pcd  data/synth/data_synth_half/scan000.pcd \
-      --pred methods/ransac_cylinder/results/data_synth_half/predictions.json \
-      --gt   data/synth/data_synth_half/gt.json
+      --pcd  data/synth/synth_half/scan000.pcd \
+      --pred methods/ransac_cylinder/results/synth_half/predictions.json \
+      --gt   data/synth/synth_half/gt.json
 
   # legacy 3DTK cylinder.2d overlay:
   python3 common/view_cloud.py --pcd data/scan000.pcd \

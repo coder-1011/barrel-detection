@@ -1,0 +1,5 @@
+loaded 29339 pts from xtion02_crop [scan000.pcd (m)]
+1 candidate cluster(s)
+  cluster[0] n= 29339 fit_n= 29339  r=  4.63cm  axis=[+0.01 -1.00 -0.03]  inliers=29221  KEEP
+
+wrote 1 detection(s) -> /home/bharath/masters/methods/ransac_cylinder/results/xtion02_crop/predictions.json  (0.75s)

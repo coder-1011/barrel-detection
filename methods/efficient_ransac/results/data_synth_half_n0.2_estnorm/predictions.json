@@ -1,8 +1,0 @@
-{
-  "scene": "data_synth_half_n0.2_estnorm",
-  "method": "efficient_ransac",
-  "units": "m",
-  "frame": "camera_optical",
-  "runtime_s": 0.0412249,
-  "detections": []
-}

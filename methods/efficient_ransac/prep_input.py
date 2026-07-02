@@ -8,7 +8,7 @@ toward the sensor at the origin.
 Loads scan000.pcd (m) or scan000.3d (cm->m, first 3 cols).
 
 Usage:
-  python3 prep_input.py --scene data/synth/data_synth_half --out /tmp/in.xyzn
+  python3 prep_input.py --scene data/synth/synth_half --out /tmp/in.xyzn
 """
 import argparse
 import os

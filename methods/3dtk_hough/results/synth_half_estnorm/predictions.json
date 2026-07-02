@@ -1,0 +1,25 @@
+{
+  "scene": "synth_half_estnorm",
+  "method": "3dtk_hough",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": null,
+  "detections": [
+    {
+      "radius_m": 0.0418511,
+      "axis": [
+        -0.00471697,
+        0.999964,
+        0.00706852
+      ],
+      "center": [
+        0.10086500000000001,
+        -0.061549999999999994,
+        0.59997
+      ],
+      "extent_m": 0.4045146198841273,
+      "score": null,
+      "lateral_pts": null
+    }
+  ]
+}

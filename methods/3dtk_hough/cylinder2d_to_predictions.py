@@ -8,9 +8,9 @@ cylinder.2d line layout (';'-separated, cm):
 
 Usage (from ~/masters):
   python3 methods/3dtk_hough/cylinder2d_to_predictions.py \
-      --in   methods/3dtk_hough/results/data2_crop/normals_o3d/detectCylinder/cylinder.2d \
-      --scene data2_crop \
-      --out  methods/3dtk_hough/results/data2_crop/predictions.json \
+      --in   methods/3dtk_hough/results/xtion02_crop/normals_o3d/detectCylinder/cylinder.2d \
+      --scene xtion02_crop \
+      --out  methods/3dtk_hough/results/xtion02_crop/predictions.json \
       --min-extent-cm 10        # phantom filter on axis extent
 """
 import argparse

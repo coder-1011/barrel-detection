@@ -15,8 +15,8 @@ Input / cluster / output handling mirror methods/ransac_cylinder/detect.py:
   project-standard schema (meters, camera_optical). See common/eval_schema.py.
 
 Usage (from ~/masters):
-  python3 methods/ls_cylinder/detect.py --scene data/synth/data_synth_half \
-      --out methods/ls_cylinder/results/data_synth_half/predictions.json
+  python3 methods/ls_cylinder/detect.py --scene data/synth/synth_half \
+      --out methods/ls_cylinder/results/synth_half/predictions.json
 """
 import argparse
 import os

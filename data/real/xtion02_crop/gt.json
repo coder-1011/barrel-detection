@@ -1,0 +1,25 @@
+{
+  "scene": "xtion02_crop",
+  "source": "real_xtion (radius/height = known physical barrel; axis=vertical, center=known-radius X-Z circle fit on the cloud \u2014 cloud-derived reference, not external metrology)",
+  "sensor": "asus_xtion_pro",
+  "units": "m",
+  "frame": "camera_optical (x right, y down, z forward)",
+  "barrels": [
+    {
+      "id": 0,
+      "radius_m": 0.0425,
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "center": [
+        0.1093,
+        -0.0595,
+        0.6394
+      ],
+      "height_m": 0.4,
+      "occlusion_frac": 0.499
+    }
+  ]
+}

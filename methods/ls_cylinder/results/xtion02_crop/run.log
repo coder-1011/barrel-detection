@@ -1,0 +1,5 @@
+loaded 29339 pts from xtion02_crop [scan000.pcd (m)]
+1 candidate cluster(s)
+  cluster[0] n= 29339 fit_n=  3551  r=  4.72cm  axis=[-0.01 +1.00 +0.03]  fit_err=4.17e-05  KEEP
+
+wrote 1 detection(s) -> /home/bharath/masters/methods/ls_cylinder/results/xtion02_crop/predictions.json  (6.73s)

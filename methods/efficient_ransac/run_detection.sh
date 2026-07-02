@@ -16,8 +16,8 @@
 #   run.log, run_meta.json
 #
 # Usage (from anywhere):
-#   methods/efficient_ransac/run_detection.sh data/synth/data_synth_half
-#   methods/efficient_ransac/run_detection.sh data/real/data3_crop --epsilon 0.004
+#   methods/efficient_ransac/run_detection.sh data/synth/synth_half
+#   methods/efficient_ransac/run_detection.sh data/real/xtion03_crop --epsilon 0.004
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

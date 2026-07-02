@@ -1,5 +1,0 @@
-loaded 21600 pts from data_synth_full [scan000.pcd (m)]
-1 candidate cluster(s)
-  cluster[0] n= 21600 fit_n= 21600  r=  4.25cm  axis=[+0.00 +1.00 +0.00]  inliers=21600  KEEP
-
-wrote 1 detection(s) -> /home/bharath/masters/methods/ransac_cylinder/results/data_synth_full/predictions.json  (0.57s)

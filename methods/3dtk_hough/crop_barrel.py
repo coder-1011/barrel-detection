@@ -15,7 +15,7 @@ Pipeline:
   6. write data*_crop/scan000.{pcd,3d,pose} with all kept clusters merged
 
 Usage:
-  python3 crop_barrel.py --pcd data2/scan000.pcd --out data2_crop
+  python3 crop_barrel.py --pcd xtion02/scan000.pcd --out xtion02_crop
 """
 import argparse
 import os

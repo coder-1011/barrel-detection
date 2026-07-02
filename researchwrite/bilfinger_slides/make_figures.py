@@ -156,23 +156,23 @@ def P(*a):
 if __name__ == "__main__":
     # 1. REAL capture: raw vs detection
     fig_raw_vs_det(
-        "real", "data2_crop",
-        P("methods", "ransac_cylinder", "results", "data2_crop", "predictions.json"),
+        "real", "xtion02_crop",
+        P("methods", "ransac_cylinder", "results", "xtion02_crop", "predictions.json"),
         os.path.join(ASSETS, "real_raw_vs_det.png"),
         "REAL DATA — Asus Xtion Pro depth capture (single barrel, ~180° visible)",
         "detected cylinder (RANSAC fit)  r=4.6 cm")
 
     # 2. SYNTHETIC: detection vs ground truth
     fig_det_vs_gt(
-        "synth", "data_synth_half",
-        P("methods", "ransac_cylinder", "results", "data_synth_half", "predictions.json"),
-        P("data", "synth", "data_synth_half", "gt.json"),
+        "synth", "synth_half",
+        P("methods", "ransac_cylinder", "results", "synth_half", "predictions.json"),
+        P("data", "synth", "synth_half", "gt.json"),
         os.path.join(ASSETS, "synth_det_vs_gt.png"),
         "SYNTHETIC DATA — generated cloud with exact ground truth")
 
     # 3. Four methods on the same REAL scene
     fig_methods_grid(
-        "real", "data2_crop",
+        "real", "xtion02_crop",
         [("3dtk_hough", "3DTK Hough"),
          ("ransac_cylinder", "RANSAC fit"),
          ("ls_cylinder", "Least-squares"),

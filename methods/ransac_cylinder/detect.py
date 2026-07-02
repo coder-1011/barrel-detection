@@ -20,8 +20,8 @@ Output: results/<scene>/predictions.json in the project-standard schema
 (meters, camera_optical frame). See common/eval_schema.py.
 
 Usage (from ~/masters):
-  python3 methods/ransac_cylinder/detect.py --scene data/synth/data_synth_half \
-      --out methods/ransac_cylinder/results/data_synth_half/predictions.json
+  python3 methods/ransac_cylinder/detect.py --scene data/synth/synth_half \
+      --out methods/ransac_cylinder/results/synth_half/predictions.json
 """
 import argparse
 import os

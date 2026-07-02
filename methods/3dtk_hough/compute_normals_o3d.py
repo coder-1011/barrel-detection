@@ -15,8 +15,8 @@ hybrid radius+knn keeps neighborhoods compact to limit chord bias.
 
 Usage (run from ~/masters):
   python3 methods/3dtk_hough/compute_normals_o3d.py \
-      --in  data/real/data3_crop \
-      --out methods/3dtk_hough/results/data3_crop/normals_o3d \
+      --in  data/real/xtion03_crop \
+      --out methods/3dtk_hough/results/xtion03_crop/normals_o3d \
       --radius-cm 0.4 --max-nn 15
   # detection is then run by methods/3dtk_hough/run_detection.sh
 """
