@@ -5,7 +5,7 @@
 #   nohup methods/barrelnet/run_offline.sh > methods/barrelnet/runs/offline.log 2>&1 &
 set -e
 cd "$(dirname "$0")/../.."
-PY=.venv/bin/python
+PY=${PY:-.venv/bin/python}
 OUT=data/synth_patches/train
 RUN=methods/barrelnet/runs/run1
 mkdir -p "$RUN"
