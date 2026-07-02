@@ -1,0 +1,10 @@
+{
+  "scene": "sweep_n0.20_s1",
+  "method": "ransac_cylinder",
+  "timestamp": "2026-07-01T01:29:02",
+  "scene_dir": "/home/bharath/Projects/masters/data/synth/sweep_n0.20_s1",
+  "run_log": "/home/bharath/Projects/masters/methods/ransac_cylinder/results/sweep_n0.20_s1/run.log",
+  "detector": "methods/ransac_cylinder/detect.py",
+  "extra_args": [],
+  "pyransac3d_version": "0.6.0"
+}

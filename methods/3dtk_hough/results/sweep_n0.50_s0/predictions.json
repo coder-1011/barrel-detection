@@ -1,0 +1,8 @@
+{
+  "scene": "sweep_n0.50_s0",
+  "method": "3dtk_hough",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": null,
+  "detections": []
+}

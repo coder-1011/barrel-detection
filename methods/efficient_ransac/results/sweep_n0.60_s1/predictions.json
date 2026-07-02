@@ -1,0 +1,8 @@
+{
+  "scene": "sweep_n0.60_s1",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 0.038660609,
+  "detections": []
+}

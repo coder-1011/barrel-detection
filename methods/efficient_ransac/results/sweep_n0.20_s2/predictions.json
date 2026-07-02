@@ -1,0 +1,41 @@
+{
+  "scene": "sweep_n0.20_s2",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 0.035131292,
+  "detections": [
+    {
+      "radius_m": 0.029163,
+      "axis": [
+        0.0542353,
+        0.997146,
+        0.0525298
+      ],
+      "center": [
+        0.115017,
+        -0.0602548,
+        0.600335
+      ],
+      "extent_m": 0.408483,
+      "score": null,
+      "lateral_pts": 15051
+    },
+    {
+      "radius_m": 0.0490384,
+      "axis": [
+        0.0357502,
+        -0.997815,
+        0.0555585
+      ],
+      "center": [
+        0.102663,
+        -0.0589233,
+        0.609629
+      ],
+      "extent_m": 0.408414,
+      "score": null,
+      "lateral_pts": 3597
+    }
+  ]
+}

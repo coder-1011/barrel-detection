@@ -1,0 +1,25 @@
+{
+  "scene": "sweep_n0.40_s1",
+  "method": "3dtk_hough",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": null,
+  "detections": [
+    {
+      "radius_m": 0.0352624,
+      "axis": [
+        0.00157237,
+        0.999998,
+        0.000785398
+      ],
+      "center": [
+        0.109775,
+        -0.06055999999999999,
+        0.60002
+      ],
+      "extent_m": 0.4120606369213153,
+      "score": null,
+      "lateral_pts": 3799
+    }
+  ]
+}

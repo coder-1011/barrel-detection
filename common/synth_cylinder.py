@@ -7,12 +7,12 @@ Defaults model the real barrel: r=4.25 cm, h=40 cm, axis along +Y,
 centered at (10, -6, 60) cm to match the captured-scene geometry.
 
 Usage (run from ~/masters):
-  python3 common/synth_cylinder.py --out data/synth/data_synth --write-pcd
+  python3 common/synth_cylinder.py --out data/synth/synth_test --write-pcd
   # then detect via:
-  methods/3dtk_hough/run_detection.sh data/synth/data_synth
+  methods/3dtk_hough/run_detection.sh data/synth/synth_test
 
   # or, to test the half-shell hypothesis directly:
-  python3 common/synth_cylinder.py --out data/synth/data_synth_half --arc-deg 120
+  python3 common/synth_cylinder.py --out data/synth/synth_half --arc-deg 120
 """
 import argparse, os
 import numpy as np
@@ -36,6 +36,8 @@ def main():
                     help="Gaussian noise on each axis, cm (Xtion ~1mm)")
     ap.add_argument("--write-pcd", action="store_true",
                     help="also write scan000.pcd in meters for view_cloud.py")
+    ap.add_argument("--seed", type=int, default=0,
+                    help="RNG seed for Gaussian noise (default 0 = legacy)")
     args = ap.parse_args()
 
     arc = np.deg2rad(args.arc_deg)
@@ -56,7 +58,7 @@ def main():
     nrm = np.stack([nx.ravel(), ny.ravel(), nz.ravel()], axis=1)
 
     if args.noise_cm > 0:
-        pts += np.random.default_rng(0).normal(0, args.noise_cm, pts.shape)
+        pts += np.random.default_rng(args.seed).normal(0, args.noise_cm, pts.shape)
 
     os.makedirs(args.out, exist_ok=True)
 

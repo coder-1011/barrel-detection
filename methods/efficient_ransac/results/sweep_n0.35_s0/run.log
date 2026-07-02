@@ -1,0 +1,6 @@
+wrote 21600 pts with normals -> /home/bharath/Projects/masters/methods/efficient_ransac/results/sweep_n0.35_s0/input_xyzn.txt
+>> cgal_ransac eps=0.006 clusEps=0.02 minPts=1500 nThr=0.85 prob=0.05 seed=42
+loaded 21600 points with normals
+3 shape(s) detected
+>> detected 1 cylinder(s) in .044636983s
+CYL 0.0534406 0.10433 -0.0604874 0.613344 -0.0797296 -0.994585 -0.0666569 0.402176 2519

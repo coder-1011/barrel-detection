@@ -1,0 +1,25 @@
+{
+  "scene": "sweep_n0.30_s0",
+  "source": "synthetic",
+  "sensor": "synthetic_xtion_sim",
+  "units": "m",
+  "frame": "camera_optical",
+  "barrels": [
+    {
+      "id": 0,
+      "radius_m": 0.0425,
+      "axis": [
+        0.0,
+        1.0,
+        0.0
+      ],
+      "center": [
+        0.1,
+        -0.06,
+        0.6
+      ],
+      "height_m": 0.4,
+      "occlusion_frac": 0.667
+    }
+  ]
+}

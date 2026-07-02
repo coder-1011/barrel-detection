@@ -1,0 +1,25 @@
+{
+  "scene": "sweep_n0.25_s0",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 0.033607036,
+  "detections": [
+    {
+      "radius_m": 0.0799068,
+      "axis": [
+        -0.0136942,
+        -0.991273,
+        0.131111
+      ],
+      "center": [
+        0.060644,
+        -0.0573805,
+        0.608021
+      ],
+      "extent_m": 0.410714,
+      "score": null,
+      "lateral_pts": 12492
+    }
+  ]
+}

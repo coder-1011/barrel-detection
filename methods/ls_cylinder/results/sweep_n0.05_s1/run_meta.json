@@ -1,0 +1,10 @@
+{
+  "scene": "sweep_n0.05_s1",
+  "method": "ls_cylinder",
+  "timestamp": "2026-07-01T01:30:30",
+  "scene_dir": "/home/bharath/Projects/masters/data/synth/sweep_n0.05_s1",
+  "run_log": "/home/bharath/Projects/masters/methods/ls_cylinder/results/sweep_n0.05_s1/run.log",
+  "detector": "methods/ls_cylinder/detect.py",
+  "extra_args": [],
+  "cylinder_fitting_version": "1.1.4"
+}

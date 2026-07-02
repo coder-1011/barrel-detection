@@ -1,0 +1,5 @@
+loaded 21600 pts from sweep_n0.25_s2 [scan000.pcd (m)]
+1 candidate cluster(s)
+  cluster[0] n= 21600 fit_n=  6690  r=  3.82cm  axis=[-0.00 +1.00 -0.00]  fit_err=4.00e-04  KEEP
+
+wrote 1 detection(s) -> /home/bharath/Projects/masters/methods/ls_cylinder/results/sweep_n0.25_s2/predictions.json  (10.35s)
