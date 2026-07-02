@@ -119,7 +119,8 @@ def main():
     ap.add_argument("--threads", type=int, default=12)
     args = ap.parse_args()
     torch.set_num_threads(args.threads)
-    dev = "cpu"
+    dev = "cuda" if torch.cuda.is_available() else "cpu"
+    print(f"device: {dev}", flush=True)
     os.makedirs(args.run, exist_ok=True)
     log = open(os.path.join(args.run, "train_log.csv"), "a", buffering=1)
     if log.tell() == 0:
@@ -155,22 +156,24 @@ def main():
     for ep in range(start_ep, args.epochs):
         model.train(); tot = 0.0
         for pts, ax, ctr in tl:
+            pts, ax, ctr = pts.to(dev), ax.to(dev), ctr.to(dev)
             opt.zero_grad()
             pax, poa = model(pts)
             loss = axis_loss(pax, ax) + 0.5 * nn.functional.mse_loss(poa, ctr)
             loss.backward(); opt.step()
-            tot += float(loss) * len(pts)
+            tot += float(loss.detach()) * len(pts)
         sched.step()
         tr_loss = tot / len(tr)
 
         model.eval(); vtot, vang = 0.0, []
         with torch.no_grad():
             for pts, ax, ctr in vl:
+                pts, ax, ctr = pts.to(dev), ax.to(dev), ctr.to(dev)
                 pax, poa = model(pts)
                 vtot += float(axis_loss(pax, ax)
                               + 0.5 * nn.functional.mse_loss(poa, ctr)) * len(pts)
                 vang += np.degrees(np.arccos(np.clip(
-                    (pax * ax).sum(1).abs().numpy(), 0, 1))).tolist()
+                    (pax * ax).sum(1).abs().cpu().numpy(), 0, 1))).tolist()
         v_loss = vtot / n_val
         am, amed, dm, dmed, hits, nreal = eval_real(model, real, npoints, dev)
         el = (time.time() - t0) / 60
