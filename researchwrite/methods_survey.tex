@@ -289,6 +289,48 @@ method (a BarrelNet-style PointNet++, or BtcDet) as a \emph{serious contender} a
 3DTK Hough baseline, not an afterthought --- while the geometric methods remain the
 zero-training reference point.
 
+\subsection{Quantitative motivation: occlusion sensitivity and LiDAR-only reliability
+limits}
+
+Beyond the barrel-specific work above, two broader, quantitatively documented findings
+from the general 3D-detection literature motivate why this thesis treats
+occlusion-robustness and sensor fusion as central questions rather than incidental ones:
+
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{Detection accuracy degrades sharply and predictably with occlusion
+  severity.} On KITTI, whose Easy/Moderate/Hard splits are explicitly defined by
+  occlusion/truncation level, PointRCNN \textbf{[Shi'19]} drops from 88.88\% to 78.63\% to
+  77.38\% car AP$_{3D}$@0.7 IoU (val set) across the three tiers --- an
+  $\sim$11.5-point gap attributable to visibility alone, a pattern that recurs across
+  nearly every LiDAR detector subsequently benchmarked on KITTI. A 2025 controlled-
+  occlusion study on nuScenes \textbf{[Kumar'25]} makes the same point with directly
+  injected occlusion: LiDAR-only mAP collapses from 64.7\% to 34.1\% ($-$47.3\%) under
+  heavy sensor occlusion, and camera-only mAP drops from 35.6\% to 20.9\% ($-$41.3\%)
+  under moderate occlusion.
+
+  \item \textbf{LiDAR-only perception is measurably less reliable than LiDAR+camera
+  fusion, including before occlusion is even considered.} In the same study
+  \textbf{[Kumar'25]}, fused BEVFusion outperforms LiDAR-only on clean, non-occluded data
+  (68.5\% vs 64.7\% mAP) and is far more robust when one sensor degrades: occluding the
+  camera leg costs fusion only 4.1 points (68.5\%$\to$65.7\%), versus the 47.3-point
+  LiDAR-only collapse above. The caveat that matters for a mission-critical framing:
+  fusion still loses 26.8 points (68.5\%$\to$50.1\%) when the LiDAR leg itself is
+  occluded --- current fusion architectures remain disproportionately reliant on LiDAR
+  and \emph{mitigate}, not \emph{eliminate}, the single-sensor occlusion failure mode. A
+  broader survey of multi-sensor fusion for autonomous driving \textbf{[Wang'25]} reaches
+  the same qualitative conclusion: LiDAR alone is limited by occlusion and cost, cameras
+  alone fail in low light / adverse weather and lack depth, and only fusion is positioned
+  to cover both gaps.
+\end{itemize}
+
+\noindent\textbf{Implication for this thesis.} These are general findings from the wider
+3D-detection literature, not yet measurements from this project's own data --- but they
+are why \S1's open question (how camera+LiDAR fusion compares with LiDAR-only,
+especially under occlusion) is not rhetorical: the literature already shows occlusion
+substantially degrades LiDAR-only detection and that fusion only partially compensates.
+The thesis's own occlusion sweep (\S5) is designed to produce the barrel-specific
+equivalent of these numbers.
+
 % =================== 5. SHORTLIST ===================
 \section{Suggested shortlist for the comparison}
 
@@ -308,6 +350,189 @@ comparison set is:
 \noindent This spans all three families, includes the occlusion specialist, and keeps the
 geometric reference --- enough to answer \emph{which method works best, and why, per
 occlusion regime}.
+
+% =================== 5b. ML BY SUPERVISION ===================
+\section{Machine-learning methods by supervision: what fits \emph{this} data}
+\label{sec:mlsupervision}
+
+\emph{(Added 2026-06-30.)} Sections~3--5 survey methods by family and occlusion-suitability.
+This section re-cuts the \emph{learned} methods by the question that actually decides what
+the thesis can build: \textbf{can we train and run it on the data we have?} It splits the
+candidates into \textbf{supervised} and \textbf{unsupervised / self-supervised}, and maps
+each onto the project's data reality and proposer$+$fit architecture.
+
+\subsection{Three data constraints that decide viability}
+\begin{enumerate}[leftmargin=1.6em,itemsep=2pt,topsep=2pt]
+  \item \textbf{No real labels yet} (one annotated drum so far) and only a handful of real
+  scans $\Rightarrow$ supervised-from-scratch on real data is out. The realistic path is
+  \emph{train on synthetic} (\texttt{common/synth\_cylinder.py} now, NVIDIA Isaac Sim later,
+  both with free per-point / instance / 6-DOF ground truth) and \emph{transfer to real} ---
+  which makes the \emph{sim-to-real gap} a quantity to \emph{measure}, not avoid
+  [Saleh'20].
+  \item \textbf{Single, static, overhead viewpoint} (mostly top caps + short walls + radial
+  scan-shadow). This excludes the large branch of unsupervised 3D detection that mines
+  objects from \emph{motion across frames} (LISO~[Baur'24] and its relatives need sequential
+  LiDAR). Only \emph{single-frame}, clustering-driven unsupervised methods apply here.
+  \item \textbf{One object class, strong known-radius prior, heavy occlusion / burial}
+  $\Rightarrow$ favours \emph{lightweight per-object regressors} over heavy multi-class
+  driving-style detectors, and points almost exactly at one paper --- BarrelNet [Yan'24].
+\end{enumerate}
+
+\subsection{Supervised (train on synthetic ground truth)}
+Grouped by \emph{where each slots into the proposer$+$fit pipeline}:
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{(a) Per-object pose / parameter regressor --- a learned ``fit''.}
+  \textbf{BarrelNet} [Yan'24]: a PointNet that regresses 6-DOF axis, radius and burial
+  fraction from one partial / occluded barrel, trained \emph{purely on synthetic} occluded
+  barrels, and beats least-squares fitting under occlusion (cos-sim $0.617\!\to\!0.997$;
+  burial-fraction error $25.8\%\!\to\!1.9\%$). This is the closest match to the project's
+  problem and drops in as a replacement for the \texttt{normals2step}/LS fit, keeping the
+  existing proposer. \emph{No public code} --- reproduce on PointNet++ [Qi'17]. \textbf{Top
+  pick (method \#5).}
+  \item \textbf{(b) Learned segmentation proposer.} A point-wise net labels barrel
+  vs.\ background (or per-instance), then cluster $+$ fit --- replacing the brittle hard-coded
+  \texttt{find\_barrel\_clusters} width prior that fails on the cluttered pile. Candidates:
+  PointNet++ seg [Qi'17], KPConv [Thomas'19], Point Transformer [Zhao'21], RandLA-Net
+  [Hu'20], or the industrial-pipe-specific ResPointNet++ [Yin'21]. Isaac Sim supplies the
+  per-point / instance labels for free.
+  \item \textbf{(c) End-to-end learned detector (the ``learned LiDAR'' family entry).} Via
+  OpenPCDet: PointPillars [Lang'19], PV-RCNN [Shi'20], CenterPoint [Yin'21], or VoteNet
+  [Qi'19] for single-object indoor-scale scenes. Heaviest to train and most
+  sim-to-real-sensitive; needed for a fair geometric-vs-learned comparison.
+  \item \textbf{(d) Primitive-fitting networks (cylinder is a native output).} SPFN [Li'19],
+  Point2Cyl [Uy'22] (a barrel \emph{is} an extrusion cylinder; code released), HPNet
+  [Yan'21], QuadricsNet [QuadricsNet'23], BPNet [BPNet'23], Point2CAD [Liu'24]. \emph{Caveat
+  to test, not assume:} all are trained on clean CAD (ABC / DeepCAD) assuming fairly complete
+  surfaces --- the CAD$\to$noisy-single-view-LiDAR$+$occlusion gap is the open question;
+  expect to finetune on the synthetic set.
+\end{itemize}
+
+\subsection{Unsupervised / self-supervised}
+Directly serves the thesis's \emph{annotation / training cost} column:
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{(a) Self-supervised pre-train $\to$ few-label finetune (highest novelty).}
+  Pre-train on the \emph{unlabeled} raw scans (e.g.\ the 1.23\,M-pt survey scan) with a
+  masked-autoencoder --- Occupancy-MAE [Min'23], MAELi [Krispel'24] --- or contrastive
+  objective --- PointContrast [Xie'20], DepthContrast [Zhang'21] (single-view depth, a good
+  fit for single-frame data) --- then finetune a detector on \emph{very few} labels. Yields a
+  \emph{label-efficiency curve} (accuracy vs.\ \# annotated barrels) that geometric methods
+  cannot offer.
+  \item \textbf{(b) Unsupervised primitive decomposition (no labels, cylinder-native).}
+  Recursive deep primitive fitting [Sharma'22], PriFit [PriFit'22], Learnable Earth Parser
+  [Loiseau'24] decompose a cloud into primitives via a reconstruction loss; cylinder is a
+  primitive. Research-grade but a legitimate unsupervised entry.
+  \item \textbf{(c) Single-frame unsupervised detection.} Commonsense-Prototype CPD [Wu'24]
+  clusters geometry into proposals and self-trains a detector \emph{without manual boxes} ---
+  one of the few that works on a single static frame. (Motion-based LISO / MODEST / OYSTER
+  are listed only to record \emph{why} they are excluded here.)
+  \item \textbf{(d) Classical unsupervised baseline.} DBSCAN / Euclidean clustering $+$
+  region-growing-on-normals --- effectively the project's \emph{current} geometric proposer,
+  so it is the unsupervised baseline to beat rather than a new method.
+\end{itemize}
+
+\subsection{Recommended ML shortlist (priority order)}
+\begin{enumerate}[leftmargin=1.6em,itemsep=2pt,topsep=2pt]
+  \item \textbf{BarrelNet-style learned fit} (supervised on synthetic) --- closest prior,
+  occlusion-robust, drop-in into proposer$+$fit, cheap to train, directly comparable to the
+  four geometric fits. \emph{Do first.}
+  \item \textbf{Learned segmentation proposer} (PointNet++ / KPConv / ResPointNet++ on Isaac
+  Sim instance labels) --- attacks the exact place geometric methods break (the pile).
+  \item \textbf{One OpenPCDet detector} (CenterPoint or PV-RCNN) --- the end-to-end
+  learned-LiDAR comparison point.
+  \item \textbf{Self-supervised pre-train $+$ few-label finetune} (Occupancy-MAE) --- the
+  label-efficiency axis; the most novel contribution beyond a plain bake-off.
+  \item \emph{Optional / exploratory:} Point2Cyl transfer test and one unsupervised
+  primitive-decomposition entry.
+\end{enumerate}
+
+\noindent\textbf{Sequencing caveat.} Every supervised option (1--3) is blocked on the Isaac
+Sim data pipeline being up; until then only the unsupervised / pre-trained-transfer paths
+(4, plus CAD-pretrained Point2Cyl as a zero-shot test) can touch real data at all.
+
+% =================== 5c. FUTURE PIPELINE ===================
+\section{Future pipeline: methods unlocked by Isaac Sim + labelled data}
+\label{sec:future}
+
+\emph{(Added 2026-06-30.)} \S\ref{sec:mlsupervision} deliberately \emph{filters down} to what
+runs on today's tiny, unlabelled real set. This section is the complementary \emph{expansion}:
+once the Isaac Sim pipeline delivers labelled data, all three constraints of
+\S\ref{sec:mlsupervision} relax and a much larger menu becomes trainable and \emph{measurable}.
+
+\subsection{What the simulator supplies (and why each unlocks methods)}
+Isaac Sim / Replicator gives, per scene, for free: \textbf{(i)} exact 6-DOF pose, radius and
+height per barrel; \textbf{(ii)} \emph{true per-barrel occlusion \%} (visible/total surface
+points) --- the grounded $x$-axis for the occlusion sweep; \textbf{(iii)} semantic \emph{and}
+instance segmentation; \textbf{(iv)} an RTX LiDAR matched to the real sensor and a
+\emph{perfectly co-registered} camera; \textbf{(v)} scripted sweeps of barrel count, spacing,
+burial depth and mutual occlusion. Each method below is annotated with the label it consumes
+and the headline experiment (\S\,Expt-1 occlusion sweep, \S\,Expt-2 calibration-noise) it feeds.
+
+\subsection{(1) Full supervised LiDAR detectors --- now trainable at scale}
+The end-to-end detectors that \S\ref{sec:mlsupervision}(c) could only gesture at become the
+core ``learned LiDAR'' arm: \textbf{PointPillars} [Lang'19], \textbf{SECOND},
+\textbf{PV-RCNN} [Shi'20], \textbf{CenterPoint} [Yin'21], \textbf{VoteNet} [Qi'19], all in one
+OpenPCDet harness. \emph{Consumes:} 3D box / instance labels. \emph{Feeds:} Expt-1 (recall +
+pose error vs.\ occlusion \%), and the geometric-vs-learned accuracy/cost comparison.
+
+\subsection{(2) Occlusion-specialist learned detection --- the thesis's sharp end}
+With true occlusion \% as both a training signal and an evaluation axis, occlusion-aware
+methods move from ``interesting'' to \emph{central}:
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt,topsep=2pt]
+  \item \textbf{BtcDet} [Xu'22] --- predicts occupancy in occluded regions before detecting;
+  the sim's occupancy / occlusion GT is exactly its supervision. \emph{The occlusion-question
+  workhorse.}
+  \item \textbf{Shape completion $\to$ fit} --- PCN [Yuan'18] (and newer completion nets):
+  hallucinate the hidden shell, then apply \emph{any} geometric fit --- a learned pre-stage
+  that upgrades all four existing methods under occlusion.
+  \item \textbf{Amodal detection} --- Isaac Sim can render amodal (whole-object) masks à la
+  Amodal-SynthDrive [Sun'24], enabling detectors that regress the \emph{complete} barrel from
+  partial evidence. \emph{Feeds:} Expt-1.
+\end{itemize}
+
+\subsection{(3) Camera+LiDAR fusion --- now that extrinsics are perfect}
+Co-registration makes the whole fusion family (Group~D) trainable, spanning the design axis:
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt,topsep=2pt]
+  \item \textbf{Camera-first frustum} --- Frustum-PointNets [Qi'18] / -ConvNet [Wang'19]: the
+  camera still sees a barrel when its LiDAR return is sparse $\Rightarrow$ the recall-under-
+  occlusion hypothesis to \emph{test}, not assume.
+  \item \textbf{Decoration / decision-level} --- PointPainting [Vora'20], CLOCs [Pang'20]:
+  cheap, modular, plug into OpenPCDet.
+  \item \textbf{Deep fusion} --- TransFusion [Bai'22], BEVFusion [Liu'23]: SOTA and, per a
+  robustness benchmark [Yu'23], \emph{calibration-robust} (TransFusion loses only
+  ${\sim}0.5\%$ mAP at 1\,m misalignment vs.\ $2.3$--$2.9\%$ for hard-projection fusion).
+\end{itemize}
+\emph{Feeds:} \textbf{Expt-2 (calibration-noise injection)} --- perturb the sim-perfect
+extrinsics and measure degradation \emph{per fusion type}; [Yu'23] gives the a-priori ranking
+(soft-attention deep fusion $>$ decoration $>$ camera-first frustum) that the thesis can
+confirm or overturn on barrels.
+
+\subsection{(4) Sim-to-real domain adaptation --- the bridge you will need}
+Because the models above train on \emph{synthetic} clouds, closing the sim-to-real gap is its
+own method family (and its own measurable axis --- how much of the gap each technique closes):
+\begin{itemize}[leftmargin=1.4em,itemsep=2pt,topsep=2pt]
+  \item \textbf{Self-training UDA} --- ST3D [Yang'21] / ST3D++ [Yang'22], STAL3D [Wang'24]:
+  pre-train on sim, then pseudo-label + curriculum-retrain on unlabelled real scans; often
+  recovers most of the fully-supervised gap.
+  \item \textbf{Self-supervised pre-train $\to$ finetune} --- Occupancy-MAE [Min'23], SPOT
+  [Yan'23], DepthContrast [Zhang'21]: pre-train on unlabelled real, finetune on sim labels ---
+  complements \S\ref{sec:mlsupervision}(a) and yields the label-efficiency curve.
+  \item \textbf{Object-level / sensor-model DA} --- match sim LiDAR noise, intensity and
+  point density to the real sensor (already partly handled by RTX-LiDAR matching).
+\end{itemize}
+
+\subsection{(5) BarrelNet, done properly}
+The \S\ref{sec:mlsupervision} top pick graduates: trained on Isaac Sim with \emph{true}
+burial-fraction and occlusion-\% supervision (not just synthetic proxies), and validated
+against real annotated drums --- the direct, apples-to-apples successor to the geometric fits,
+and the closest reproduction of the one published barrel-specific result [Yan'24].
+
+\subsection{Framing note: the cost column flips}
+For \emph{sim}-trained methods the manual-annotation cost that the survey keeps as a fairness
+column collapses to near-zero; the real cost becomes \emph{simulator build $+$ sim-to-real
+adaptation}. The comparison therefore shifts from ``geometric (no training) vs.\ learned
+(expensive labels)'' to ``geometric vs.\ learned-on-free-sim-labels, discounted by the
+sim-to-real gap'' --- which is precisely why (4) is a first-class part of the future pipeline,
+not an afterthought.
 
 % =================== 6. BIBLIOGRAPHY ===================
 \section{References (grouped, with links)}
@@ -359,7 +584,12 @@ occlusion regime}.
   \item \textbf{[Shi'20]} S.~Shi, C.~Guo, L.~Jiang, et al. \emph{PV-RCNN: Point-Voxel
   Feature Set Abstraction for 3D Object Detection.} CVPR 2020.
   \href{https://arxiv.org/abs/1912.13192}{[arXiv:1912.13192]} \,(see also SECOND: Yan et
-  al., Sensors 2018, and PointRCNN: Shi et al., CVPR 2019.)
+  al., Sensors 2018.)
+  \item \textbf{[Shi'19]} S.~Shi, X.~Wang, H.~Li. \emph{PointRCNN: 3D Object Proposal
+  Generation and Detection from Point Cloud.} CVPR 2019.
+  \href{https://arxiv.org/abs/1812.04244}{[arXiv:1812.04244]} \,(KITTI val car
+  AP$_{3D}$@0.7: Easy 88.88\% / Moderate 78.63\% / Hard 77.38\% --- the occlusion-tier gap
+  used as quantitative motivation in \S4.)
   \item \textbf{[Yin'21]} T.~Yin, X.~Zhou, P.~Kr\"ahenb\"uhl. \emph{Center-based 3D Object
   Detection and Tracking (CenterPoint).} CVPR 2021.
   \href{https://arxiv.org/abs/2006.11275}{[arXiv:2006.11275]}
@@ -368,6 +598,21 @@ occlusion regime}.
   \href{https://arxiv.org/abs/2112.02205}{[arXiv:2112.02205]}
   \item \textbf{[OpenPCDet]} OpenPCDet --- open-source toolbox implementing SECOND,
   PointPillars, PV-RCNN, CenterPoint, etc. \href{https://github.com/open-mmlab/OpenPCDet}{[github]}
+  \item \textbf{[Thomas'19]} H.~Thomas, C.~R.~Qi, J.-E.~Deschaud, B.~Marcotegui,
+  F.~Goulette, L.~J.~Guibas. \emph{KPConv: Flexible and Deformable Convolution for Point
+  Clouds.} ICCV 2019. \href{https://arxiv.org/abs/1904.08889}{[arXiv:1904.08889]}
+  \,(point-convolution segmentation backbone.)
+  \item \textbf{[Zhao'21]} H.~Zhao, L.~Jiang, J.~Jia, P.~Torr, V.~Koltun. \emph{Point
+  Transformer.} ICCV 2021. \href{https://arxiv.org/abs/2012.09164}{[arXiv:2012.09164]}
+  \item \textbf{[Hu'20]} Q.~Hu, B.~Yang, L.~Xie, et al. \emph{RandLA-Net: Efficient Semantic
+  Segmentation of Large-Scale Point Clouds.} CVPR 2020.
+  \href{https://arxiv.org/abs/1911.11236}{[arXiv:1911.11236]}
+  \item \textbf{[Yin'21seg]} C.~Yin, B.~Wang, V.~J.~L.~Gan, M.~Wang, J.~C.~P.~Cheng.
+  \emph{Automated Semantic Segmentation of Industrial Point Clouds Using ResPointNet++.}
+  Automation in Construction 130:103874, 2021.
+  \href{https://www.sciencedirect.com/science/article/abs/pii/S0926580521003253}{[link]}
+  $\cdot$ \href{https://github.com/PointCloudYC/ResPointNet2}{[code]} \,(pipes / tanks /
+  pumps; the closest industrial-cylinder segmentation precedent.)
 \end{itemize}
 
 \subsection*{C. Learned primitive fitting \& shape completion}
@@ -383,6 +628,22 @@ occlusion regime}.
   \href{https://arxiv.org/abs/2005.07457}{[arXiv:2005.07457]}
   \item \textbf{[Yuan'18]} W.~Yuan, T.~Khot, D.~Held, C.~Mertz, M.~Hebert. \emph{PCN: Point
   Completion Network.} 3DV 2018. \href{https://arxiv.org/abs/1808.00671}{[arXiv:1808.00671]}
+  \item \textbf{[Sharma'20]} G.~Sharma, D.~Liu, S.~Maji, E.~Kalogerakis, S.~Chaudhuri,
+  R.~M\v{e}ch. \emph{ParSeNet: A Parametric Surface Fitting Network for 3D Point Clouds.}
+  ECCV 2020. \href{https://arxiv.org/abs/2003.12181}{[arXiv:2003.12181]}
+  \item \textbf{[Yan'21]} S.~Yan, Z.~Yang, C.~Ma, H.~Huang, E.~Vouga, Q.~Huang. \emph{HPNet:
+  Deep Primitive Segmentation Using Hybrid Representations.} ICCV 2021.
+  \href{https://arxiv.org/abs/2105.10620}{[arXiv:2105.10620]}
+  $\cdot$ \href{https://github.com/SimingYan/HPNet}{[code]}
+  \item \textbf{[QuadricsNet'23]} \emph{QuadricsNet: Learning Concise Representation for
+  Geometric Primitives in Point Clouds.} 2023.
+  \href{https://arxiv.org/abs/2309.14211}{[arXiv:2309.14211]} \,(lightweight quadric fit;
+  handles sparse / noisy data.)
+  \item \textbf{[BPNet'23]} \emph{BPNet: B\'ezier Primitive Segmentation on 3D Point Clouds.}
+  IJCAI 2023. \href{https://arxiv.org/abs/2307.04013}{[arXiv:2307.04013]}
+  \item \textbf{[Liu'24]} \emph{Point2CAD: Reverse Engineering CAD Models from 3D Point
+  Clouds.} CVPR 2024. \href{https://arxiv.org/abs/2312.04962}{[arXiv:2312.04962]}
+  \,(newer primitive$+$spline reverse-engineering pipeline.)
 \end{itemize}
 
 \subsection*{D. Camera--LiDAR fusion}
@@ -412,6 +673,21 @@ occlusion regime}.
   \item \textbf{[Liu'23]} Z.~Liu, H.~Tang, A.~Amini, et al. \emph{BEVFusion: Multi-Task
   Multi-Sensor Fusion with Unified Bird's-Eye-View Representation.} ICRA 2023.
   \href{https://arxiv.org/abs/2205.13542}{[arXiv:2205.13542]}
+  \item \textbf{[Kumar'25]} S.~Kumar, T.~Brophy, E.~M.~Grua, G.~Sistu, V.~Donzella,
+  C.~Eising. \emph{Evaluating the Impact of Weather-Induced Sensor Occlusion on
+  BEVFusion for 3D Object Detection.} arXiv, Nov 2025.
+  \href{https://arxiv.org/abs/2511.04347}{[arXiv:2511.04347]} \,(nuScenes; controlled
+  camera/LiDAR occlusion injection --- quantitative motivation in \S4.)
+  \item \textbf{[Wang'25]} H.~Wang, J.~Liu, H.~Dong, Z.~Shao. \emph{A Survey of the
+  Multi-Sensor Fusion Object Detection Task in Autonomous Driving.} Sensors 25(9):2794,
+  2025. \href{https://www.mdpi.com/1424-8220/25/9/2794}{[link]} \,(qualitative: LiDAR
+  limited by occlusion/cost, camera limited by light/weather/depth --- fusion as the
+  complementary fix.)
+  \item \textbf{[Yu'23]} K.~Yu, T.~Tao, H.~Xie, et al. \emph{Benchmarking the Robustness of
+  LiDAR-Camera Fusion for 3D Object Detection.} CVPR-W 2023.
+  \href{https://arxiv.org/abs/2205.14951}{[arXiv:2205.14951]} \,(ranks fusion types by
+  calibration-noise tolerance --- the a-priori for the Expt-2 calibration-noise injection;
+  TransFusion's soft attention degrades least.)
 \end{itemize}
 
 \subsection*{E. Occlusion-robust \& barrel / buried-object specific}
@@ -428,6 +704,72 @@ occlusion regime}.
   \item \textbf{[Geophys'10]} \emph{Integrated Geophysical Measurements on a Test Site for
   Detection of Buried Steel Drums.} 2010. \,(Non-LiDAR buried-drum context: magnetometry /
   EMI.) \href{https://arxiv.org/abs/1009.5555}{[arXiv:1009.5555]}
+  \item \textbf{[Sun'24]} A.~Sun, et al. \emph{Amodal-SynthDrive: A Synthetic Amodal
+  Perception Dataset for Autonomous Driving.} 2024.
+  \href{https://arxiv.org/abs/2309.06547}{[arXiv:2309.06547]} \,(synthetic amodal / whole-object
+  masks --- the template for rendering amodal barrel GT in Isaac Sim.)
+\end{itemize}
+
+\subsection*{F. Self-supervised / unsupervised LiDAR representation learning \& detection}
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{[Xie'20]} S.~Xie, J.~Gu, D.~Guo, C.~R.~Qi, L.~J.~Guibas, O.~Litany.
+  \emph{PointContrast: Unsupervised Pre-training for 3D Point Cloud Understanding.} ECCV
+  2020. \href{https://arxiv.org/abs/2007.10985}{[arXiv:2007.10985]}
+  \item \textbf{[Zhang'21]} Z.~Zhang, R.~Girdhar, A.~Joulin, I.~Misra. \emph{Self-Supervised
+  Pretraining of 3D Features on any Point-Cloud (DepthContrast).} ICCV 2021.
+  \href{https://arxiv.org/abs/2101.02691}{[arXiv:2101.02691]}
+  $\cdot$ \href{https://github.com/facebookresearch/DepthContrast}{[code]} \,(single-view
+  depth --- fits single-frame data.)
+  \item \textbf{[Min'23]} C.~Min, et al. \emph{Occupancy-MAE: Self-Supervised Pre-Training
+  Large-Scale LiDAR Point Clouds with Masked Occupancy Autoencoders.} IEEE Trans.\
+  Intelligent Vehicles, 2023. \href{https://arxiv.org/abs/2206.09900}{[arXiv:2206.09900]}
+  \item \textbf{[Krispel'24]} G.~Krispel, et al. \emph{MAELi: Masked Autoencoder for
+  Large-Scale LiDAR Point Clouds.} WACV 2024.
+  \href{https://arxiv.org/abs/2212.07207}{[arXiv:2212.07207]}
+  \item \textbf{[Baur'24]} S.~Baur, et al. \emph{LISO: LiDAR-Only Self-Supervised 3D Object
+  Detection.} ECCV 2024. \href{https://arxiv.org/abs/2403.07071}{[arXiv:2403.07071]}
+  \,(\emph{needs sequential / motion} cues --- recorded here as \emph{not} applicable to the
+  single static scan.)
+  \item \textbf{[Wu'24]} H.~Wu, et al. \emph{Commonsense Prototype for Outdoor Unsupervised
+  3D Object Detection (CPD).} CVPR 2024. \href{https://arxiv.org/abs/2404.16493}{[arXiv:2404.16493]}
+  \,(single-frame, clustering-driven self-training.)
+\end{itemize}
+
+\subsection*{G. Unsupervised primitive decomposition (no labels)}
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{[Sharma'22]} \emph{Unsupervised Recursive Deep Fitting of 3D Primitives to
+  Points.} Computers \& Graphics, 2022.
+  \href{https://www.sciencedirect.com/science/article/abs/pii/S0097849321002314}{[link]}
+  \item \textbf{[PriFit'22]} \emph{PriFit: Learning to Fit Primitives Improves Few-Shot Point
+  Cloud Segmentation.} Eurographics / SGP 2022.
+  \href{https://arxiv.org/abs/2112.13942}{[arXiv:2112.13942]}
+  \item \textbf{[Loiseau'24]} R.~Loiseau, E.~Vincent, M.~Aubry, L.~Landrieu. \emph{Learnable
+  Earth Parser: Discovering 3D Prototypes in Aerial Scans.} CVPR 2024.
+  \href{https://arxiv.org/abs/2304.09704}{[arXiv:2304.09704]} \,(unsupervised reconstruction
+  $\to$ primitive prototypes.)
+\end{itemize}
+
+\subsection*{H. Synthetic data, sim-to-real \& domain adaptation for learned LiDAR detection}
+\begin{itemize}[leftmargin=1.4em,itemsep=3pt,topsep=2pt]
+  \item \textbf{[Saleh'20]} K.~Saleh, et al. \emph{Manual-Label Free 3D Detection via an
+  Open-Source Simulator.} 2020. \href{https://arxiv.org/abs/2011.07784}{[arXiv:2011.07784]}
+  \,(simulator-trained detector with LiDAR-guided sampling; supports the Isaac-Sim
+  train$\to$real-test plan.)
+  \item \textbf{[Yang'21]} J.~Yang, S.~Shi, Z.~Wang, H.~Li, X.~Qi. \emph{ST3D: Self-training
+  for Unsupervised Domain Adaptation on 3D Object Detection.} CVPR 2021.
+  \href{https://arxiv.org/abs/2103.05346}{[arXiv:2103.05346]}
+  $\cdot$ \href{https://github.com/CVMI-Lab/ST3D}{[code]} \,(canonical sim/real-to-real UDA;
+  pseudo-label memory + curriculum augmentation.)
+  \item \textbf{[Yang'22]} J.~Yang, S.~Shi, Z.~Wang, H.~Li, X.~Qi. \emph{ST3D++: Denoised
+  Self-training for Unsupervised Domain Adaptation on 3D Object Detection.} IEEE T-PAMI 2022.
+  \href{https://arxiv.org/abs/2108.06682}{[arXiv:2108.06682]}
+  \item \textbf{[Wang'24]} Y.~Wang, et al. \emph{STAL3D: Unsupervised Domain Adaptation for 3D
+  Object Detection via Collaborating Self-Training and Adversarial Learning.} 2024.
+  \href{https://arxiv.org/abs/2406.19362}{[arXiv:2406.19362]}
+  \item \textbf{[Yan'23]} X.~Yan, et al. \emph{SPOT: Scalable 3D Pre-training via Occupancy
+  Prediction for Learning Transferable 3D Representations.} 2023.
+  \href{https://arxiv.org/abs/2309.10527}{[arXiv:2309.10527]} \,(occupancy-based pre-training;
+  bridges sim label $\to$ real finetune.)
 \end{itemize}
 
 } % end \small

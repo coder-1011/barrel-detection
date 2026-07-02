@@ -31,6 +31,6 @@ EGL offscreen rendering (works headless on this machine).
 - Date on the title slide (`DATELINE` in `build_deck.py`).
 
 ## Numbers (sourced from the live scoreboard / predictions.json)
-Real `data2_crop` RANSAC fit: radius 4.63 cm vs 4.25 cm physical (0.38 cm),
+Real `xtion02_crop` RANSAC fit: radius 4.63 cm vs 4.25 cm physical (0.38 cm),
 axis-angle 1.85°. Synthetic top methods: P=R=F1=1.00, radius RMSE <0.5 cm,
 axis <0.5°. See the `methods-status-and-results` memory for the full table.
