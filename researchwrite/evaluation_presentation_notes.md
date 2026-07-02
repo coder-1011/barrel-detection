@@ -1,162 +1,176 @@
-# Evaluation Presentation — Reader Notes
+# Evaluation Presentation — Reader Notes (v2, after supervisor feedback)
 
-Companion to `researchwrite/evaluation_presentation.pptx`. One section per slide,
-written in full sentences — the detail, caveats, and numbers that do **not** fit on
-the (deliberately sparse) slides. This is the version to *read to prepare*, not a
-teleprompter. Numbers are pulled from the project memory and `eval/*.csv` as of
-2026-07-01. Title-slide presenter / supervisor / date are left as `[FILL]`.
+Companion to `researchwrite/evaluation_presentation.pptx` (rebuilt 2026-07-02). One
+section per slide, written in full sentences — the detail, caveats, and numbers that do
+**not** fit on the (deliberately sparse, big-font) slides. This is the version to *read
+to prepare*, not a teleprompter. Numbers pulled from the project memory, `eval/*.csv`,
+and `methods/barrelnet/runs/*/train_log.csv` as of 2026-07-02. Title-slide presenter /
+supervisor / date are left as `[FILL]`.
 
-> Deck pairing: build the figures with `researchwrite/make_eval_figures.py`, run the
-> synthetic noise-sweep job, then `python3 researchwrite/build_eval_deck.py`. Slide 5's
-> table is read live from `eval/<method>.csv` (the `sweep_*` rows), so it always matches
-> the measured numbers.
+> Deck pairing: `python3 researchwrite/make_eval_figures.py` (intro/fitting/pipeline/
+> synth-data/BarrelNet-epoch figures), `python3 eval/plot_noise_sweep.py` (big-font
+> sweep chart), then `python3 researchwrite/build_eval_deck.py`. The F1 numbers on the
+> synthetic-results slide are read live from `eval/<method>.csv` (`sweep_*` rows).
+
+## What changed vs the 2026-07-01 draft (supervisor feedback applied)
+
+- **Fonts**: body text is now ≥17 pt (mostly 18–22 pt); all regenerated figures use
+  ≥13 pt text at render size so graph labels survive projection.
+- **One point per bullet**, plain language; method jargon ("accumulator mass",
+  "normals2step") removed from slides (kept here in the notes).
+- **New general intro**: the bin-picking problem first, then "the objects are also
+  covered". If the supervisor's two AI-generated images are saved as
+  `presentation_assets/binpicking_ai_1.png` / `binpicking_ai_2.png`, the build script
+  uses them on slide 1 automatically; until then a schematic (`binpicking_intro.png`)
+  stands in.
+- **"Fitting" explained from scratch** (line-fit example → cylinder parameters → why a
+  thin arc is ambiguous) on its own slide with a dedicated figure.
+- **Family pros/cons split** into separate +/− bullets, each family's idea given in one
+  plain sentence.
+- Key subtitle content promoted into highlighted **key-line strips**.
+- **Evaluation bullets integrated into the pipeline graphic** itself.
+- **Synthetic experiment split** into setup (with pictures of the data) + results
+  (full-width plot). **Real data split** into two slides (clean lab / occluded drum).
+- **Risks slide now pairs each risk with a mitigation**; the deck ends on a positive
+  summary slide.
+- **NEW: three BarrelNet slides** — the learned method + its synthetic training data,
+  the training-progress epoch comparison (laptop CPU vs A100), and the detection
+  visualisation on the real pile.
 
 ---
 
 ## Title slide
 
 The registered thesis title is **"Detection and Robotic Manipulation of Partially
-Occluded Object(s)"** — kept verbatim. The subtitle reframes it as the concrete research
-problem: *detecting partially occluded cylindrical objects for robotic manipulation, a
-multi-method comparison in 3D point clouds.* Open by stating plainly that the thesis is an
-**empirical comparison of detection methods**, with manipulation as the eventual second
-half (not yet started — be honest about that when it comes up on slide 9). Note for the
-talk: the current work is **detection only**; "robotic manipulation" is in the title
-because it is the registered scope, but everything shown today is the perception front-end
-that manipulation will depend on.
+Occluded Object(s)"** — kept verbatim. Open by saying the thesis is an **empirical
+comparison of detection methods**, with manipulation as the eventual second half (not
+yet started — be honest about that when slide 16 comes up).
 
 ---
 
-## Slide 1 — Problem statement
+## Slide 1 — The bin-picking problem
 
-The picture is the real survey-LiDAR scene (`data/real/station1_pit_barrels`, 106,905
-points): a tumbled pile of **standard 200 L oil drums** (radius 0.286 m, diameter 0.57 m),
-**partially buried, mutually occluding, lying in arbitrary orientations** on a pit floor at
-~z −15 m, captured from a **single terrestrial viewpoint**. Use it to make "partially
-occluded" concrete: from one viewpoint you see mostly top caps, short wall sections, and
-radial scan-shadow gaps — each barrel exposes only a thin arc, not the whole surface.
+General audience intro, no project specifics yet. Bin picking: a robot must take
+objects out of an unordered pile. To grasp anything it needs, per object, the **pose**
+— where the object is and how it lies. Challenges even in the standard setting: objects
+overlap and touch, the 3D sensor only ever sees the surfaces facing it, and poses are
+arbitrary. The slide's key line: *before the robot can grasp anything, it must know
+exactly where each object is and how it lies.*
 
-The task is to recover, per barrel, the full pose — **centre, axis direction, and radius**
-— which is what a manipulation stage would need to grasp a drum. The hard part is that a
-thin arc (~120–200° of the circumference) leaves both radius and axis under-constrained, so
-naive cylinder fitting is ambiguous. Stress the framing: this is an **empirical, systematic
-comparison** to find which method works best under occlusion and to characterise each
-method's operating regime — *not* a defence of a predetermined hypothesis. Every "method A
-beats method B" statement in this talk is a measurement, not an assumption.
+Image note: the supervisor supplied two AI-generated illustrations in his feedback
+mail. Save them as `presentation_assets/binpicking_ai_1.png` and `binpicking_ai_2.png`
+and rebuild — the deck will pick them up automatically. Until then a hand-drawn
+schematic (open bin vs sand-covered bin, sensor above) is used.
 
 ---
 
-## Slide 2 — Existing solutions (three families)
+## Slide 2 — Our case is harder: the objects are covered
 
-This is distilled from the 9-page literature survey (`methods_survey.tex`: an 18-method
-landscape table plus a 1–5 occlusion-suitability rubric). Three families, each with its
-occlusion-specific trade-off:
-
-- **LiDAR-only geometric** (Euclidean clustering + fit, region-growing, randomized Hough,
-  RANSAC / efficient-RANSAC, robust least-squares). *Advantage under occlusion:* no
-  training data, cheap, and a partial arc still produces Hough votes or a fittable inlier
-  set — this is the zero-training reference point. *Disadvantage:* Hough needs enough
-  accumulator mass, so heavy occlusion thins the votes and clutter creates spurious peaks;
-  RANSAC/LS tolerate partial arcs but are only as good as the **proposer** that hands them
-  points, and clustering proposers split or merge adjacent/touching drums. Survey rates
-  most of these **2–3 / 5** for occlusion.
-
-- **LiDAR-only learned** (PointNet++ segment-then-fit, VoteNet, voxel/pillar detectors,
-  BtcDet). *Advantage:* they learn partial-shape cues and can fire from partial evidence —
-  centre-voting and occlusion-aware occupancy prediction are *built* for occlusion, and the
-  one published barrel-specific study, **BarrelNet** (Yan et al., OCEANS 2024), trains on
-  synthetically occluded/buried cylinders and **beats a classical least-squares fit**.
-  *Disadvantage:* they need labelled occluded examples — which this project does **not have
-  yet** — plus a sim-to-real gap and real annotation/training cost. Survey rates these
-  **4 / 5**, but conditional on data.
-
-- **Camera + LiDAR fusion** (camera-first frustum → fit; LiDAR-first proposals → image
-  verification / point painting). *Advantage:* one modality can compensate when the other
-  is occluded, and fusion gives the best recall on the safety-critical classes.
-  *Disadvantage:* the modalities **fail together** when calibration drifts, and (slide 9)
-  current fusion stays disproportionately LiDAR-reliant when the LiDAR leg is the one
-  occluded.
-
-**Why these were chosen for the thesis** (from the `barrel-detection-project` memory and the
-survey's "Purpose and scope" + "Suggested shortlist"): breadth-first — get several methods
-running on barrels before deepening any one; **no-training-data methods first** because they
-need no labels and form the reference point; **reuse existing code, don't reimplement**; and
-keep the **proposer/fit separation** so a single stage can be swapped and methods compared
-fairly. BarrelNet is the nearest learned prior but has **no public code**, so the learned
-family is deferred until a training set exists.
+Transition from generic bin picking to this project: the objects are **200-litre steel
+drums** (radius 0.286 m), tumbled into a pile and **partially buried in sand/debris**,
+scanned by a survey LiDAR from a **single viewpoint** (`data/real/station1_pit_barrels`,
+106,905 points). Consequence (key line): each drum shows the sensor only a small patch
+of its surface — mostly top caps, short wall strips, and scan-shadow gaps. That patch
+is all any method gets.
 
 ---
 
-## Slide 3 — Methods chosen to evaluate
+## Slide 3 — What "fitting" means
 
-Four implemented geometric detectors, all LiDAR-only, all reading the same scene and
-emitting the same schema:
+Supervisor asked not to assume the audience knows fitting. Three-panel figure
+(`fitting_explained.png`):
 
-1. **3dtk_hough** — the baseline: 3DTK's `detectCylinder`, a randomized 2-step Hough (2D
-   Hough on the Gaussian sphere of normals for axis direction, then 3D Hough for centre +
-   radius).
-2. **ransac_cylinder** — shared clustering proposer + a `normals2step` fit (axis from the
-   smallest eigenvector of the normal covariance, then a 2D circle-RANSAC in the
-   cross-section). pyRANSAC-3D is kept only as a documented failure baseline.
-3. **ls_cylinder** — the *same* shared proposer + a nonlinear least-squares cylinder fit
-   (`xingjiepan/cylinder_fitting`).
-4. **efficient_ransac** — Schnabel 2007 multi-primitive RANSAC via CGAL; **self-contained,
-   no proposer** (it finds cylinders directly).
-
-The architecture diagram shows the **proposer → reusable metric fit** split. The point of
-the design: RANSAC and LS share one proposer and differ only in the fit, which makes a
-**clean fit-quality comparison** — but that shared proposer is a confound. Efficient RANSAC
-deliberately removes the confound by detecting cylinders without any proposer, which is
-exactly why it was added.
+1. **Line fit** — the simplest model: choose slope + offset so the line matches the
+   measured points best (residual sticks drawn in grey). "Fitting = choosing model
+   parameters that minimise the mismatch to the measurements."
+2. **The cylinder model** — what has to be found per drum: **centre** (a point),
+   **axis direction** (a 3D direction), **radius**. That pose triple is exactly what a
+   grasp planner needs.
+3. **Why occlusion breaks it** — a thin visible arc of a circle is consistent with many
+   different circles (three shown through the same points). The less of the barrel we
+   see, the more cylinders explain the same points.
 
 ---
 
-## Slide 4 — Evaluation method
+## Slide 4 — Existing solutions: three families
 
-How evaluation is actually carried out today. Three pieces:
+Distilled from the 18-method literature survey (`methods_survey.tex`). Each family gets
+one plain-language idea sentence, one advantage bullet, one disadvantage bullet:
 
-- **Shared schema** — ground truth lives in `gt.json` and each method's output in
-  `predictions.json`, **both in metres** (documented in `data/GT_TEMPLATE.json`). Mind the
-  unit discipline: 3DTK is internally cm, Open3D / `.pcd` are m, and the standardized schema
-  is m — a recurring source of bugs.
-- **Method contract** — every detector exposes `run_detection.sh <scene-dir>` and writes
-  `results/<scene>/predictions.json`. Because the interface is identical, the evaluation is
-  method-agnostic: adding a method means adding a folder, not touching the evaluator.
-- **`eval/evaluate.py`** — matches each prediction to the nearest ground-truth barrel under
-  a gate (axis ≤ 30°, GT-centre within 10 cm of the predicted axis) and reports
-  **precision / recall / F1**, **radius RMSE**, **axis-angle error (deg)**, and **runtime**.
-  Annotation/training cost is kept as a column in the wider plan so geometric and learned
-  methods will eventually compare fairly.
+- **Geometry-based** — search the points directly for cylinder shapes (voting,
+  random-sampling, least-squares). *+* works out of the box, no training data.
+  *−* needs enough visible points; touching drums get merged. (In survey terms: Hough
+  needs enough votes in its accumulator, RANSAC/LS are only as good as the point
+  proposer — but the slide deliberately avoids that vocabulary.)
+- **Learning-based** — a neural network learns what partial barrels look like from many
+  examples (PointNet++, BtcDet, BarrelNet). *+* can recognise a barrel from a small
+  fragment — built for occlusion. *−* needs many labelled training examples first;
+  sim-to-real gap. Closest prior work: **BarrelNet** (Yan et al., OCEANS 2024,
+  arXiv:2410.01061) — PointNet trained on synthetically occluded/buried cylinders,
+  beats least-squares fitting; no public code, so we reproduce it ourselves (slide 11).
+- **Camera + LiDAR** — combine colour images with 3D points (frustum, point painting).
+  *+* one sensor covers for the other when blocked. *−* both must be precisely
+  calibrated; miscalibration makes them fail together.
 
-The pipeline figure traces it end to end: data sources (Xtion capture / survey LiDAR /
-`synth_cylinder.py`) → scene + `gt.json` → proposer/crop (geometric methods only) →
-`run_detection.sh` → `predictions.json` → `evaluate.py` → metrics.
+Key line = the plan: start geometry-based (no data needed), add learning + fusion as
+data arrives. Breadth-first, reuse existing code.
 
 ---
 
-## Slide 5 — Evaluating the methods (synthetic noise sweep)  ← NEW WORK
+## Slide 5 — Four geometry-based methods implemented
 
-This slide reports a **new** experiment, not a transcription. The existing synthetic set was
-only 10 scenes at effectively one occlusion level, so it could not show a *trend*. For this
-talk we generated an expanded sweep that **isolates sensor noise as the single variable**:
+One plain sentence per method (the slide's whole point is that a non-expert can follow):
 
-- **33 synthetic clouds** (`data/synth/sweep_n<noise>_s<seed>/`), arc fixed at the existing
-  120° "half" convention (occlusion_frac 0.667), Gaussian noise swept across
-  **0.0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.50, 0.60 cm**, each at **3 seeds**
-  for genuine repeats / variance. A `--seed` argument was added to
-  `common/synth_cylinder.py` (default 0, backward-compatible — it still reproduces the
-  original 10 scenes exactly) because the generator previously hardcoded `rng(0)` and
-  produced identical clouds at a given noise level.
-- All four methods were run on every scene with the same flags as the existing
-  `synth_half*` set (clean single barrel → no crop), then scored with
-  `eval/evaluate.py --csv eval/<method>.csv`.
+1. **3DTK Hough (baseline)** — every point votes for the cylinders it could lie on; the
+   strongest vote wins. (Technically: randomized 2-step Hough — Gaussian-sphere vote
+   for the axis, then 3D Hough for centre+radius.)
+2. **RANSAC fit** — try many random small point samples, keep the cylinder most points
+   agree with. (Technically: shared clustering proposer + normals2step fit.)
+3. **Least-squares fit** — start from a rough guess, adjust the cylinder until it
+   matches the points best (nonlinear LS, `xingjiepan/cylinder_fitting`).
+4. **Efficient RANSAC** — an optimised RANSAC that searches the whole scene for shapes
+   in one pass (Schnabel 2007 via CGAL; needs no proposer).
 
-**Result figure:** `presentation_assets/synth_noise_sweep.png` — radius error, axis error,
-and F1/recall vs noise, one line per method. The slide's table is read **live from
-`eval/*.csv`** (the `sweep_*` rows), so it always reflects the measured values.
+Architecture diagram below the bullets shows the proposer → metric-fit split. If asked:
+RANSAC and LS share one proposer (clean fit comparison, but a shared confound);
+Efficient RANSAC removes that confound by finding cylinders directly. Key line: all
+four are LiDAR-only, no training data, identical input/output — directly comparable.
 
-**Measured results (mean over 3 seeds; full per-level table in
-`presentation_assets/synth_noise_sweep_table.csv`):**
+---
+
+## Slide 6 — How we evaluate
+
+The explanations now live **inside** the pipeline graphic (supervisor feedback): six
+boxes — data → ground truth → detection → predictions → scoring → metrics — each with
+an italic note underneath (one shared format, everything in metres; identical command
+`run_detection.sh <scene>`; same matching rule for every method; precision/recall/F1 +
+radius & axis error + runtime). Key line defines the **accuracy gate** used throughout
+the talk: a prediction counts as correct if its **direction is within 30°** and the
+true centre lies **within 10 cm** of the predicted axis. Unit discipline if asked: 3DTK
+is internally cm, Open3D/.pcd are m, the shared schema is m.
+
+---
+
+## Slide 7 — Experiment 1 (synthetic): setup
+
+Explains the experiment properly on the slide (feedback), with a picture of the data
+(`synth_data_example.png`: the actual clouds at σ = 0.0 / 0.3 / 0.6 cm). Setup: **33
+computer-generated clouds** of one barrel (r = 4.25 cm) showing a **120° visible
+strip** (like a half-hidden drum); the **only variable is Gaussian measurement noise**
+— 11 levels from 0.0 to 0.6 cm, each with 3 random repeats (`--seed` added to
+`common/synth_cylinder.py` for genuine repeats). All four methods run with identical
+default flags; scored with the standard harness. The question (key line): how much
+sensor noise can each method tolerate before it fails? Caveat to state out loud: this
+sweep varies noise at ONE occlusion level — it is a fit-robustness test, **not** an
+occlusion test (that needs Isaac Sim, slide 15).
+
+---
+
+## Slide 8 — Experiment 1: results
+
+Full-width big-font chart (radius error / axis error / F1 vs noise). Bullets embed the
+live-aggregated F1 from `eval/*.csv`. Per-level numbers (mean over 3 seeds, from
+`presentation_assets/synth_noise_sweep_table.csv`):
 
 | metric | method | σ=0.00 | σ=0.20 | σ=0.40 | σ=0.60 |
 |---|---|---|---|---|---|
@@ -173,161 +187,185 @@ and F1/recall vs noise, one line per method. The slide's table is read **live fr
 | | Efficient RANSAC | 0.01 | 3.79 | 2.67 | 5.03 |
 | | 3DTK Hough | – | – | 0.10 | 0.10 |
 
-(– = no true positives at that level → radius/axis undefined.) The slide's aggregate table
-is auto-read from `eval/*.csv`; the aggregate hides the *shape* of these curves, so use this
-per-level table when narrating.
-
-**Headline trends to verbalise:**
-
-- **Most robust: RANSAC fit and Least-squares** — both hold **F1 = 1.0 across the entire
-  sweep** (they detect the barrel at every noise level and seed). LS has the lowest axis
-  error everywhere (≤0.09°); RANSAC actually keeps the lowest radius RMSE at high noise
-  (~0.3 cm at σ=0.6, edging out LS, whose radius error grows roughly linearly to ~1.1 cm).
-- **Degrades fastest: Efficient RANSAC (Schnabel/CGAL)** — axis error blows up to ~3.8° by
-  σ=0.2 and ~5° by σ=0.6, radius RMSE reaches ~2.3 cm, and it **drops detections mid-range**
-  (detection rate falls to 0.33 at σ=0.2). This matches the known behaviour that it needs
-  `epsilon ≈ noise scale` and at intermediate noise sometimes explains the arc as *planes*
-  rather than a cylinder.
-- **3DTK Hough is erratic, not monotonic** — counter-intuitively it *misses* the clean and
-  low-noise scenes (F1 = 0 at σ=0.0, 0.05, 0.20) and only locks on reliably at higher noise
-  (F1 = 1.0 at σ=0.6). This is a quirk of its default Gaussian-sphere / Hough binning on a
-  clean 120° arc — a little noise actually helps it populate the accumulator. When it does
-  fire, its axis error is tiny (~0.1°). Frame this as a *finding about the baseline's
-  brittleness to its own binning*, not as noise-robustness.
-
-**Runtime (single lightweight wall-clock pass around `run_detection.sh`, 3 scenes/method):**
-3DTK Hough ≈ **1.4 s**, Efficient RANSAC ≈ **2.3 s**, RANSAC fit ≈ **3.3 s**, Least-squares
-≈ **16.6 s** (slowest by ~5–10×). So LS buys its low axis error and perfect recall at a large
-runtime cost. (These full wall-clock figures supersede the older algorithm-core numbers
-~0.7 s / ~0.05 s in the scoreboard, which timed only the fit, not the whole call.)
-
-**Caveat to state out loud:** this sweep varies *noise at one occlusion level*. It is a
-controlled fit-robustness test, **not** an occlusion test — the occlusion sweep is future
-work (slide 8), and the synthetic noise model is i.i.d. Gaussian, which is not how real
-sensors behave (slide 7).
+Trends to verbalise: **RANSAC + LS hold F1 = 1.0 across the whole sweep**; LS has the
+best axis (≤0.09°) but RANSAC the best radius at high noise. **Efficient RANSAC
+degrades fastest** (axis ~3.8° by σ=0.2, drops detections mid-range — it needs its
+tolerance ≈ noise scale, and sometimes explains the arc as planes). **3DTK Hough is
+erratic, not monotonic** — misses clean scenes (F1=0 at σ=0.0/0.05/0.20) and only locks
+on at high noise; a little noise helps populate its voting bins. Frame as brittleness
+of the baseline's own binning, not noise-robustness. Runtime (full wall-clock per
+scene): Hough ~1.4 s, Efficient RANSAC ~2.3 s, RANSAC ~3.3 s, **LS ~16.6 s** (5–10×
+slower — it buys precision with runtime).
 
 ---
 
-## Slide 6 — Methods on real data
+## Slide 9 — Experiment 2 (real): clean lab barrel
 
-Two real scenes, deliberately reusing existing renders (no regeneration):
-
-- **`xtion02_crop`** — a clean, single Asus Xtion barrel (r = 4.25 cm, ~180° visible). **All
-  four methods detect it** (recall 1.0). Radius error ranges 0.09–0.94 cm and axis error
-  0.10–1.85° across methods — i.e. radius to ~1 cm and axis to ~2°. The one wrinkle:
-  **3dtk_hough emits a phantom second cylinder** (r ≈ 2.1 cm, 572 pts) → precision drops to
-  0.50, and it is **non-deterministic** (unseeded randomized Hough — the committed run had 1
-  detection, a re-run had 2); the other three are seeded and reproducible. Note the
-  sim-to-real gap: real radius error is **~6–8× the synthetic** figure, attributable to real
-  Xtion noise.
-
-- **`station1_pit_barrels_seg00`** — the first **occluded survey-LiDAR drum** (a single
-  tilted 200 L drum segmented from the pile, r = 0.286 m). The renders are
-  `real_fits_ransac_ls.png` (per-method cross-sections vs the true circle) and
-  `real_fits_on_cloud.png` (GT / RANSAC / LS cylinders on the actual cloud, two angles).
-  **All four score F1 = 0 out of the box** under the standard gate — and *the failure modes
-  are the finding*:
-  - **ls_cylinder is by far the closest** — radius 31.4 cm, axis error 17.1° (inside the
-    30° gate), but the GT centre sits **11.1 cm** from the predicted axis versus the 10 cm
-    gate, so it misses by **1.1 cm**. The fit genuinely lies along the drum. This near-miss
-    is the slide's real takeaway.
-  - **ransac_cylinder** got a good radius (25.9 cm) but the normals2step axis from the
-    partial tilted arc is **69°** off → false positive.
-  - **efficient_ransac** fits a huge ~1.0–1.5 m radius to the gently curved single-viewpoint
-    patch across every tuning → rejected by the radius filter (0 detections).
-  - **3dtk_hough** — 0 detections (its cfg radius band is tuned for the 4.25 cm lab barrel,
-    and its Open3D normals are oriented toward the origin, invalid for this de-offset survey
-    cloud → the axis vote fails).
-
-  **GT caveat to disclose:** the `gt.json` axis came from a *coarse* crop that caught ~2
-  **coaxial** drums as one blob (height 1.11 m), so the reference axis is itself a two-drum
-  composite — part of why even the good single-drum LS fit lands just outside the centre
-  gate. A clean quantitative win needs a multi-position registered scan and/or per-drum
-  (non-coaxial) ground truth.
+`xtion02_crop`: a small lab barrel (r = 4.25 cm, ~180° visible) seen by an Asus Xtion
+depth camera; render `bilfinger_slides/assets/real_3d_det.png`. Table (P/R details):
+all four methods find the barrel (recall 1.0); radius error 0.09–0.94 cm, direction
+error 0.1–1.9°. The wrinkle: **3DTK Hough also emits a phantom second cylinder**
+(r ≈ 2.1 cm) → precision 0.50, and it is non-deterministic (unseeded randomized Hough).
+Second bullet is the important one: real errors ran **~6–8× the synthetic** figures —
+real sensor noise is structured (range-dependent, shadow gaps), not the clean i.i.d.
+noise we simulate.
 
 ---
 
-## Slide 7 — Problems with the pipeline (data & methodology)
+## Slide 10 — Experiment 3 (real): occluded survey drum
 
-Focus on **data / methodology limitations**, not engineering friction:
+`station1_pit_barrels_seg00`: one tilted, half-buried 200 L drum segmented out of the
+pile. **All four methods fail the accuracy gate** (F1 = 0 untuned) — and the failure
+modes are the finding:
 
-1. **The synthetic generator can't produce genuinely occluded scenes.**
-   `common/synth_cylinder.py` makes a single idealized arc plus Gaussian noise — it cannot
-   generate multiple mutually-occluding barrels, burial, clutter, or multipath/sensor
-   artefacts the way the real survey scan shows them. So synthetic results don't transfer to
-   occlusion claims.
-2. **Synthetic data isn't representative of real data.** Real Xtion and survey-LiDAR noise is
-   *structured* (multipath, range-dependent, occlusion-shadow gaps), not i.i.d. Gaussian. The
-   evidence: real radius error ran **~6–8×** the synthetic error, and **all four methods
-   scored F1 = 0** untuned on the first real occluded scan.
-3. **Not enough data to train/validate learned methods.** No labelled occluded real scenes
-   exist yet, and the synthetic set is essentially one pose/occlusion level — nowhere near
-   enough for a PointNet++/BarrelNet-style model, which is why the learned family is blocked.
-4. **Can't yet accurately measure the geometric methods either.** Only **one** real occluded
-   ground truth exists (`station1_pit_barrels_seg00`), and even that GT is suspect (the coarse
-   crop caught two coaxial drums as one blob). Current P/R/F1 rests on a thin, partly
-   unreliable evaluation set — not a statistically meaningful sample.
-5. **Net effect:** today's pipeline can demonstrate the harness works, but it can't yet
-   support either "method A beats method B under occlusion" or "this is ready to train a
-   learned detector." Both need the Isaac Sim data plan (slide 8).
+- **Least-squares is by far the closest**: radius 31.4 cm, direction 17.1° (inside the
+  30° gate), but the true centre sits **11.1 cm** from the predicted axis — a
+  **1.1 cm near-miss** on the 10 cm gate. The fit genuinely lies along the drum.
+- **RANSAC fit**: good radius (25.9 cm) but direction 69° off (its axis estimate from
+  surface normals breaks on the partial tilted arc).
+- **Efficient RANSAC**: fits a huge ~1.0–1.5 m radius to the gently curved patch →
+  rejected. **3DTK Hough**: no detection (its config is tuned to the 4.25 cm lab
+  barrel; its normal orientation assumption is invalid for this de-offset survey
+  cloud).
+
+GT caveat to disclose if asked: this drum's reference axis came from a coarse crop that
+caught two coaxial drums as one blob, so even the good LS fit is judged against a
+slightly suspect reference. Key line: occlusion is exactly where the classical methods
+break — the motivation for the learned method on the next slide.
 
 ---
 
-## Slide 8 — Future pipeline
+## Slide 11 — BarrelNet: the first learning-based method  ← NEW
 
-The unlock is **NVIDIA Isaac Sim** as a ground-truthed data engine: per-barrel pose / axis /
-radius, 3D boxes and instance/semantic masks for free (Replicator), an RTX LiDAR matched to
-the real sensor with a co-registered camera, and scripted scenes sweeping barrel count,
-spacing, burial depth, and mutual occlusion — including a computed **true occlusion %** per
-barrel (visible/total surface points) for a grounded x-axis. That enables:
+Method #5, `methods/barrelnet/` — a from-scratch reproduction of the BarrelNet idea
+(Yan et al. 2024 has no public code). What it is: a **PointNet-style neural network**
+that takes the ~hundreds of LiDAR points of ONE drum patch and directly outputs the
+drum's **pose**: axis direction (sign-symmetric loss) + a point on the axis. Radius is
+not regressed — the drum type is known (r = 0.286 m).
 
-- The **occlusion sweep** — recall + pose error vs true occlusion %, per method — which is
-  the thesis's **headline result**.
-- **Learned methods** (PointNet++ / BarrelNet-style, optionally BtcDet) once the labelled
-  training set exists.
-- **Camera + LiDAR fusion** — one camera-first frustum pipeline and one LiDAR-first / point-
-  painting pipeline.
-- A **calibration-noise injection** experiment — perturb the sim-perfect camera↔LiDAR
-  extrinsics to find where any fusion advantage degrades (a key real-world failure mode).
+Training data (figure `synth_patches_sample.png`): **12,000 randomly generated
+synthetic patches** from `gen_synth_patches.py` — axis uniformly random, visible arc
+60–300°, survey-LiDAR-like scan-grid spacing, dropout, optional cap disc, burial-plane
+clipping, sand clutter, 2–15 mm noise. The generator's randomisation is the
+augmentation.
 
-The roadmap figure stages this. Frame Isaac Sim as the thing that gives the *free, perfect
-ground truth* that both the occlusion sweep and the learned methods depend on.
+**The key methodological point (key line, green):** training uses **no real data at
+all**. The **21 hand-verified real drums** (semi-automatic annotation + CloudCompare
+review, 2026-07-02) are the **held-out test set**, evaluated every epoch and never
+trained on — so every real-drum number in this talk is an honest measure of
+synthetic-to-real transfer, a core thesis result in itself.
 
 ---
 
-## Slide 9 — General problems & open risks
+## Slide 12 — BarrelNet: training progress (epoch comparison)  ← NEW
 
-Lead with two **literature-backed** points (both verifiable in `methods_survey.tex` §4),
-then the project-specific risks. Keep it honest rather than padded.
+Figure `barrelnet_epochs.png`: score on the 21 held-out real drums vs training epoch,
+for **two runs of the same network** — the laptop CPU run (stopped at epoch 148 by its
+8 h budget) and the A100 GPU run (full 200-epoch schedule). Three panels: drums within
+the accuracy gate (of 21), median centre error (cm, with the 10 cm gate line), median
+direction error (deg, with the 30° gate line).
 
-1. **Accuracy degrades sharply with occlusion severity** — a known pattern across 3D
-   detection, not unique to this project. On KITTI, whose Easy/Moderate/Hard splits are
-   *defined* by occlusion/truncation, **PointRCNN** drops from **88.88 → 78.63 → 77.38%**
-   car AP₃D@0.7 across the three tiers — an ~11.5-point gap attributable to visibility alone
-   (**[Shi'19]**, *PointRCNN*, CVPR 2019, arXiv:1812.04244). A 2025 controlled-occlusion
-   study on nuScenes injects occlusion directly and shows **LiDAR-only mAP collapse from
-   64.7% to 34.1% (−47.3%)** under heavy sensor occlusion (**[Kumar'25]**, arXiv:2511.04347).
+What to narrate:
 
-2. **LiDAR-only alone isn't robust enough for mission-critical use** — which is why the
-   roadmap includes fusion, not just geometric LiDAR. In the same study **[Kumar'25]**, fused
-   **BEVFusion beats LiDAR-only even on clean data (68.5% vs 64.7% mAP)** and is far more
-   robust when one sensor degrades: occluding the **camera** leg costs fusion only **4.1
-   points** (68.5 → 65.7), versus the **47.3-point** LiDAR-only collapse above. The honest
-   caveat: fusion still loses **26.8 points** (68.5 → 50.1) when the **LiDAR** leg itself is
-   occluded — current fusion *mitigates* but does **not** *eliminate* the single-sensor
-   occlusion failure mode. A broader fusion survey reaches the same qualitative conclusion
-   (**[Wang'25]**, *Sensors* 25(9):2794).
+- **Finishing the schedule nearly doubled the score: 7/21 → 12/21.** The laptop run
+  plateaued at 7/21 (epoch 148); the A100 run reaches 12/21 (best.pt epoch 180 ≈
+  last.pt epoch 199).
+- **Direction is learned early** (median ~15–16° well inside the 30° gate from
+  mid-training; 16/21 drums within the direction gate). **Centre position is the
+  bottleneck** — median centre error crosses the 10 cm gate only around epoch ~110
+  as the learning-rate steps down, ending at ~8 cm.
+- **Training has converged**: the curve is flat after ~epoch 130 (LR decayed /16 by
+  epoch 200) — further gains need better data or fine-tuning, not more epochs.
+- Checkpoint-selection lesson (if asked): the checkpoint with the lowest *synthetic*
+  validation loss is NOT the best on real data — select on the real metric.
+- Persistent failures across both runs: the sparsest drum (115 points) and two drums
+  with merged/contaminated segments — data-quality, not capacity, issues.
 
-   > **Verification note:** the brief also cited an MDPI *Sensors* 25(13):3865 / PMC12251959
-   > figure (fusion +4.1% vehicles, +29.2% pedestrians). That reference is **not present in
-   > this repo's bibliography** and could not be verified here, so it is **deliberately not
-   > printed on the slide**. The `[Shi'19]`, `[Kumar'25]`, and `[Wang'25]` numbers above are
-   > all verifiable in `methods_survey.tex` §4 / §6 with the cited arXiv IDs and venue. If
-   > you want the MDPI per-class figure on the slide, verify its title/venue/DOI first.
+---
 
-3. **Project-specific risks:** the **sim-to-real gap** (sim LiDAR is cleaner than real survey
-   LiDAR); the **manipulation half** of the thesis title is **not yet started** (current work
-   is detection-only); **annotation/training cost** is a fairness concern for the
-   geometric-vs-learned comparison (learned methods look "free" only if you ignore it); and
-   general **scope / timeline** risk. It is fine for this slide to be short — the two cited
-   points should carry most of its weight.
+## Slide 13 — BarrelNet on the real drum pile  ← NEW
+
+Figure `station_detection.png` (from `make_figures.py`): the whole survey pile, the 21
+annotated drums coloured by instance, BarrelNet's predicted cylinders overlaid on a few
+drums — green = within the accuracy gate, red = miss (checkpoint: A100 epoch 180).
+
+- **12 of 21 real drums located within the gate** (direction ≤ 30° AND centre ≤ 10 cm);
+  median direction error ~15°, median centre error ~8 cm; 16/21 within the direction
+  gate alone.
+- Context: the four geometric methods scored **0** on their occluded test drum
+  (slide 10) — synthetic-only training already beats them on exactly the hard case.
+- **Honest limitation (grey bullet):** BarrelNet is a **pose estimator, not a
+  detector** — it is *given* a segmented drum patch and estimates that drum's pose. It
+  cannot find the ~70% of the pile that is unannotated. Full-pile detection needs a
+  proposer/segmentation front-end (the planned `run_detection.sh` wrapper) plus more
+  annotation — orthogonal to how well the pose network works.
+
+---
+
+## Slide 14 — What limits the evaluation today
+
+One limitation per bullet, plain language:
+
+1. The synthetic scene generator still cannot imitate a truly buried, cluttered pile
+   (single idealised arc + noise; no mutual occlusion/burial/multipath).
+2. Real sensor noise is structured, not the clean i.i.d. noise we simulate (evidence:
+   the 6–8× error jump on slide 9).
+3. Only 21 real drums are labelled (~30% of the pile) — too few for strong statistics.
+4. Some labels are imperfect (two coaxial drums annotated as one blob — the slide-10
+   caveat).
+
+Key line stays constructive: the evaluation machinery works; what is missing is more
+and better ground-truth data → segue to Isaac Sim.
+
+---
+
+## Slide 15 — Next step: simulation closes the data gap
+
+NVIDIA Isaac Sim as a ground-truthed data engine: every simulated drum comes with exact
+pose and exact burial/occlusion fraction — labels for free (Replicator; RTX LiDAR
+matched to the real sensor; co-registered camera; scripted sweeps of count, spacing,
+burial, mutual occlusion). That enables (bullets deliberately do not repeat the roadmap
+graphic): the **occlusion sweep** (detection quality vs how much of the drum is hidden
+— the headline thesis experiment), more learned methods trained at scale, and
+camera+LiDAR fusion incl. a calibration-noise-injection experiment.
+
+---
+
+## Slide 16 — Open risks, and how we deal with them
+
+Feedback: don't end on problems without answers → each risk is paired with a
+mitigation in a two-column table:
+
+1. **Accuracy collapses under occlusion** (field-wide: PointRCNN loses ~11.5 pts car AP
+   across KITTI's occlusion tiers, 88.88 → 78.63 → 77.38 [Shi'19, arXiv:1812.04244];
+   LiDAR-only mAP 64.7 → 34.1 (−47.3%) under controlled heavy occlusion [Kumar'25,
+   arXiv:2511.04347]) → **we measure it systematically per method instead of assuming;
+   that comparison IS the thesis.**
+2. **One sensor may never be reliable enough** → **fusion is planned**; [Kumar'25]:
+   fusion beats LiDAR-only even clean (68.5 vs 64.7 mAP) and loses only 4.1 pts to
+   camera occlusion vs the 47.3-pt LiDAR-only collapse. Honest caveat if asked: fusion
+   still loses 26.8 pts when the LiDAR leg itself is occluded — it mitigates, not
+   eliminates, the failure mode ([Wang'25], Sensors 25(9):2794, same qualitative
+   conclusion).
+3. **Sim-trained models may not transfer** → **BarrelNet already measures exactly this
+   transfer** (12/21 on real drums, slide 13); next experiment: fine-tune on ~6 real
+   drums, evaluate on the remaining 15 (the label-efficiency experiment).
+4. **Manipulation not started** → detection outputs exactly the pose a grasp planner
+   needs; manipulation follows the method comparison.
+
+> **Verification note (kept from v1):** an MDPI Sensors 25(13):3865 / PMC12251959
+> "+4.1%/+29.2%" fusion figure was previously proposed and **rejected** — that paper is
+> V2V LiDAR-only cooperative fusion, and its percentages are vs a prior SOTA baseline,
+> not LiDAR-only. Only [Shi'19], [Kumar'25], [Wang'25] (all verifiable in
+> `methods_survey.tex` §4/§6) are cited on the slide.
+
+---
+
+## Slide 17 — Summary
+
+End positive: (1) one fair evaluation pipeline — every method, same data, same score;
+(2) four geometry-based methods work well on visible barrels and all fail on a truly
+occluded one — measured, not assumed; (3) **BarrelNet, trained only on synthetic
+drums, already finds 12 of 21 real occluded drums**; (4) next: simulated data for the
+occlusion sweep, real-drum fine-tuning, sensor fusion. Key line: learned + simulated is
+the promising path for occluded drums — and we can now measure exactly how promising.

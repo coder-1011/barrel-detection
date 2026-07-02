@@ -76,9 +76,11 @@ def main():
     data = {name: agg(load_method(name)) for name, _, _ in METHODS}
 
     # ---- figure: 3 panels ----
-    plt.rcParams.update({"font.size": 12, "axes.titlesize": 14,
-                         "axes.labelsize": 12, "legend.fontsize": 11})
-    fig, axes = plt.subplots(1, 3, figsize=(16, 5.0))
+    # big fonts: the chart must stay readable from the back row of a talk
+    plt.rcParams.update({"font.size": 15, "axes.titlesize": 18,
+                         "axes.labelsize": 16, "legend.fontsize": 14,
+                         "xtick.labelsize": 13, "ytick.labelsize": 13})
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5.4))
     panels = [("rrmse_cm", "Radius error (cm)", "radius RMSE vs noise"),
               ("axis_deg", "Axis error (deg)",  "axis-angle error vs noise"),
               ("f1",       "F1 score",          "F1 vs noise")]
@@ -86,8 +88,8 @@ def main():
         for name, label, color in METHODS:
             d = data[name]
             ax.errorbar(d["noise"], d[key], yerr=d[key + "_std"],
-                        label=label, color=color, marker="o", ms=4,
-                        lw=1.8, capsize=2.5, elinewidth=0.9, alpha=0.9)
+                        label=label, color=color, marker="o", ms=6,
+                        lw=2.6, capsize=3.0, elinewidth=1.2, alpha=0.9)
         ax.set_xlabel("Gaussian noise sigma (cm)")
         ax.set_ylabel(ylab)
         ax.set_title(title)
@@ -96,7 +98,7 @@ def main():
     axes[0].legend(loc="upper left", framealpha=0.9)
     fig.suptitle("Synthetic single-barrel noise sweep  "
                  "(arc 120 deg, r=4.25 cm; 3 seeds/level, mean +/- std)",
-                 fontsize=15, fontweight="bold")
+                 fontsize=19, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.94])
     png = os.path.join(OUTDIR, "synth_noise_sweep.png")
     fig.savefig(png, dpi=150)
