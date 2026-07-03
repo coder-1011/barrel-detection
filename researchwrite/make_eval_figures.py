@@ -11,6 +11,7 @@ Outputs -> researchwrite/presentation_assets/
   - fitting_explained.png   (slide 3: line-fit example -> cylinder parameters -> arc ambiguity)
   - pipeline_flow.png       (evaluation pipeline with the explanations INSIDE the graphic)
   - synth_data_example.png  (what the synthetic sweep clouds actually look like, 3 noise levels)
+  - test_data_overview.png  (the 3 test data sets side by side: synth / lab barrel / pile)
   - barrelnet_epochs.png    (BarrelNet real-drum score vs training epoch, laptop CPU vs A100)
   - station1_pile_raw.png   (the real partially-occluded 200 L drum pile, raw)
 
@@ -50,49 +51,41 @@ def load_pcd(path):
 
 # ----------------------------------------------------------------- pipeline flow
 def fig_pipeline_flow():
-    """Evaluation pipeline with the slide's explanations integrated into the
-    graphic (supervisor feedback: bullets work better inside the diagram)."""
+    """Evaluation pipeline, minimal text: 6 boxes with a bold header and one
+    short line each — no footnotes (per supervisor/user feedback)."""
     boxes = [
-        ("1. Data", "real scans +\nsynthetic clouds", ACCENT,
-         "depth camera, survey\nLiDAR, generator"),
-        ("2. Ground truth", "true barrel poses\n(gt.json)", DARK,
-         "one shared format,\neverything in metres"),
-        ("3. Detection", "each method runs\non the same scene", GREEN,
-         "identical command:\nrun_detection.sh <scene>"),
-        ("4. Predictions", "detected barrels\n(predictions.json)", DARK,
-         "same format as the\nground truth"),
-        ("5. Scoring", "match predictions\nto ground truth", ACCENT,
-         "same matching rule\nfor every method"),
-        ("6. Metrics", "precision / recall / F1\nradius & axis error", GREEN,
-         "plus runtime\nper scene"),
+        ("1. Data", "real scans +\nsynthetic clouds", ACCENT),
+        ("2. Ground truth", "true barrel\nposes", DARK),
+        ("3. Detection", "each method,\nsame scene", GREEN),
+        ("4. Predictions", "detected\nbarrels", DARK),
+        ("5. Scoring", "match predictions\nto ground truth", ACCENT),
+        ("6. Metrics", "found? radius &\ndirection error", GREEN),
     ]
     n = len(boxes)
-    fig, ax = plt.subplots(figsize=(15.5, 4.4))
+    fig, ax = plt.subplots(figsize=(15.5, 3.4))
     ax.set_xlim(0, n)
     ax.set_ylim(0, 1)
     ax.axis("off")
-    bw, bh = 0.88, 0.44
-    cy = 0.62
-    for i, (head, body, col, note) in enumerate(boxes):
+    bw, bh = 0.90, 0.62
+    cy = 0.46
+    for i, (head, body, col) in enumerate(boxes):
         x = i + 0.5
         box = FancyBboxPatch((x - bw / 2, cy - bh / 2), bw, bh,
                              boxstyle="round,pad=0.02,rounding_size=0.06",
-                             linewidth=2.0, edgecolor=col, facecolor=LIGHT)
+                             linewidth=2.2, edgecolor=col, facecolor=LIGHT)
         ax.add_patch(box)
-        ax.text(x, cy + 0.115, head, ha="center", va="center",
-                fontsize=16, fontweight="bold", color=col)
-        ax.text(x, cy - 0.075, body, ha="center", va="center",
-                fontsize=12.5, color=DARK)
-        ax.text(x, cy - bh / 2 - 0.15, note, ha="center", va="center",
-                fontsize=11.5, color="#666666", style="italic")
+        ax.text(x, cy + 0.16, head, ha="center", va="center",
+                fontsize=19, fontweight="bold", color=col)
+        ax.text(x, cy - 0.11, body, ha="center", va="center",
+                fontsize=15, color=DARK)
         if i < n - 1:
             ax.add_patch(FancyArrowPatch((x + bw / 2, cy),
                                          (x + 1 - bw / 2, cy),
-                                         arrowstyle="-|>", mutation_scale=20,
-                                         linewidth=2.0, color="#777777"))
+                                         arrowstyle="-|>", mutation_scale=22,
+                                         linewidth=2.2, color="#777777"))
     ax.set_title("One evaluation pipeline for every method — "
                  "same data in, same score out",
-                 fontsize=19, fontweight="bold", color=DARK, pad=14)
+                 fontsize=20, fontweight="bold", color=DARK, pad=14)
     fig.tight_layout()
     out = os.path.join(ASSETS, "pipeline_flow.png")
     fig.savefig(out, dpi=160, bbox_inches="tight")
@@ -143,11 +136,11 @@ def _draw_bin(ax, cover=False):
 def fig_binpicking_intro():
     fig, axes = plt.subplots(1, 2, figsize=(14, 6.4))
     _draw_bin(axes[0], cover=False)
-    axes[0].set_title("Bin picking: find each object and its pose,\nthen grasp it",
-                      fontsize=17, fontweight="bold", color=DARK)
+    axes[0].set_title("objects loose in a bin", fontsize=18,
+                      fontweight="bold", color=DARK)
     _draw_bin(axes[1], cover=True)
-    axes[1].set_title("Our case: the objects are also partially\nburied / covered",
-                      fontsize=17, fontweight="bold", color=AMBER)
+    axes[1].set_title("our case: also buried under sand", fontsize=18,
+                      fontweight="bold", color=AMBER)
     fig.tight_layout()
     out = os.path.join(ASSETS, "binpicking_intro.png")
     fig.savefig(out, dpi=160, bbox_inches="tight")
@@ -273,6 +266,53 @@ def fig_synth_data_example():
     print("wrote", out)
 
 
+# ----------------------------------------------------------------- test data overview
+def fig_test_data_overview():
+    """The three test data sets on one slide (shown BEFORE the methods):
+    synthetic barrel -> real lab barrel -> real occluded pile."""
+    panels = [
+        (os.path.join(MASTERS, "data", "synth", "sweep_n0.30_s0",
+                      "scan000.pcd"),
+         "1 · Synthetic barrel", "generated — true cylinder known exactly",
+         DARK, 3.0),
+        (os.path.join(MASTERS, "data", "real", "xtion02_crop",
+                      "scan000.pcd"),
+         "2 · Real lab barrel", "depth camera, fully visible",
+         ACCENT, 2.2),
+        (os.path.join(MASTERS, "data", "real", "station1_pit_barrels",
+                      "scan000.pcd"),
+         "3 · Real drum pile", "survey LiDAR, tumbled + buried drums",
+         AMBER, 1.6),
+    ]
+    rng = np.random.default_rng(0)
+    fig = plt.figure(figsize=(15.5, 5.4))
+    for i, (path, head, sub, col, psize) in enumerate(panels):
+        pts = load_pcd(path)
+        if pts.shape[0] > 80000:
+            pts = pts[rng.choice(pts.shape[0], 80000, replace=False)]
+        ax = fig.add_subplot(1, 3, i + 1, projection="3d")
+        ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], s=psize, c=pts[:, 2],
+                   cmap="viridis", linewidths=0)
+        ax.set_title(f"{head}\n{sub}", fontsize=17, fontweight="bold",
+                     color=col)
+        ax.set_axis_off()
+        # fill the panel: per-axis limits + a box aspect matching the data
+        lo = np.percentile(pts, 1, axis=0)
+        hi = np.percentile(pts, 99, axis=0)
+        pad = 0.03 * (hi - lo)
+        ax.set_xlim(lo[0] - pad[0], hi[0] + pad[0])
+        ax.set_ylim(lo[1] - pad[1], hi[1] + pad[1])
+        ax.set_zlim(lo[2] - pad[2], hi[2] + pad[2])
+        rngs = np.maximum(hi - lo, 1e-6)
+        ax.set_box_aspect(tuple(rngs / rngs.max()), zoom=1.25)
+        ax.view_init(elev=20, azim=-60)
+    fig.tight_layout()
+    out = os.path.join(ASSETS, "test_data_overview.png")
+    fig.savefig(out, dpi=160, bbox_inches="tight")
+    plt.close(fig)
+    print("wrote", out)
+
+
 # ----------------------------------------------------------------- barrelnet epochs
 def _load_train_log(path):
     ep, hits, dist, axis = [], [], [], []
@@ -387,5 +427,6 @@ if __name__ == "__main__":
     fig_fitting_explained()
     fig_pipeline_flow()
     fig_synth_data_example()
+    fig_test_data_overview()
     fig_barrelnet_epochs()
     fig_station1_pile_raw()

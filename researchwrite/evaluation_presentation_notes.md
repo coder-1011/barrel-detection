@@ -1,6 +1,6 @@
-# Evaluation Presentation — Reader Notes (v2, after supervisor feedback)
+# Evaluation Presentation — Reader Notes (v3)
 
-Companion to `researchwrite/evaluation_presentation.pptx` (rebuilt 2026-07-02). One
+Companion to `researchwrite/evaluation_presentation.pptx` (rebuilt 2026-07-03). One
 section per slide, written in full sentences — the detail, caveats, and numbers that do
 **not** fit on the (deliberately sparse, big-font) slides. This is the version to *read
 to prepare*, not a teleprompter. Numbers pulled from the project memory, `eval/*.csv`,
@@ -37,6 +37,23 @@ supervisor / date are left as `[FILL]`.
   the training-progress epoch comparison (laptop CPU vs A100), and the detection
   visualisation on the real pile.
 
+## What changed in v3 (2026-07-03, second feedback round)
+
+- **Intro de-duplicated**: slide 1 said the bin-picking message three times (subtitle +
+  figure titles + key line) — now title + images + one key line.
+- **Flow fixed, general → specific**: "what fitting means" now comes BEFORE "our drums
+  are covered" (slides 2/3 swapped); the "a small patch fits many cylinders" message
+  now lands on the pile slide, where it belongs.
+- **Data before methods**: a new "test data" slide (synthetic barrel / lab barrel /
+  drum pile — `test_data_overview.png`) sits before the methods slide; the separate
+  synthetic-experiment *setup* slide is merged into the results slide.
+- **Methods slide slimmed**: the small architecture diagram and the "details on
+  request" subtitle are gone; four bigger bullets remain.
+- **Pipeline chart minimal**: the italic per-box footnotes were removed from
+  `pipeline_flow.png`; the boxes are bigger. The key line (accuracy gate) stays.
+- Later slides de-duplicated (BarrelNet caption vs bullet; the limits slide now
+  references Experiment 2 instead of restating its noise finding).
+
 ---
 
 ## Title slide
@@ -64,20 +81,10 @@ schematic (open bin vs sand-covered bin, sensor above) is used.
 
 ---
 
-## Slide 2 — Our case is harder: the objects are covered
+## Slide 2 — What "fitting" means
 
-Transition from generic bin picking to this project: the objects are **200-litre steel
-drums** (radius 0.286 m), tumbled into a pile and **partially buried in sand/debris**,
-scanned by a survey LiDAR from a **single viewpoint** (`data/real/station1_pit_barrels`,
-106,905 points). Consequence (key line): each drum shows the sensor only a small patch
-of its surface — mostly top caps, short wall strips, and scan-shadow gaps. That patch
-is all any method gets.
-
----
-
-## Slide 3 — What "fitting" means
-
-Supervisor asked not to assume the audience knows fitting. Three-panel figure
+Comes BEFORE the project-specific pile (v3 flow fix: stay general first). Supervisor
+asked not to assume the audience knows fitting. Three-panel figure
 (`fitting_explained.png`):
 
 1. **Line fit** — the simplest model: choose slope + offset so the line matches the
@@ -87,8 +94,22 @@ Supervisor asked not to assume the audience knows fitting. Three-panel figure
    **axis direction** (a 3D direction), **radius**. That pose triple is exactly what a
    grasp planner needs.
 3. **Why occlusion breaks it** — a thin visible arc of a circle is consistent with many
-   different circles (three shown through the same points). The less of the barrel we
-   see, the more cylinders explain the same points.
+   different circles (three shown through the same points).
+
+Key line bridges to the next slide: with a full view fitting is easy — the difficulty
+starts when most of the object is hidden.
+
+---
+
+## Slide 3 — Our case is harder: the drums are covered
+
+Transition from the general task to this project: the objects are **200-litre steel
+drums** (radius 0.286 m), tumbled into a pile and **partially buried in sand/debris**,
+scanned by a survey LiDAR from a **single viewpoint** (`data/real/station1_pit_barrels`,
+106,905 points). Each drum shows the sensor only a small patch of its surface — mostly
+top caps, short wall strips, and scan-shadow gaps. Key line ties back to panel 3 of the
+fitting slide: a small patch fits many different cylinders — that ambiguity is the core
+difficulty of this thesis.
 
 ---
 
@@ -112,12 +133,31 @@ one plain-language idea sentence, one advantage bullet, one disadvantage bullet:
   *+* one sensor covers for the other when blocked. *−* both must be precisely
   calibrated; miscalibration makes them fail together.
 
-Key line = the plan: start geometry-based (no data needed), add learning + fusion as
-data arrives. Breadth-first, reuse existing code.
+Key line = the plan: all three families are compared on the same data; geometry first,
+since it needs no training data. Breadth-first, reuse existing code.
 
 ---
 
-## Slide 5 — Four geometry-based methods implemented
+## Slide 5 — The data we test every method on  ← NEW (v3)
+
+Introduced BEFORE the methods (user feedback): three panels in
+`test_data_overview.png`, difficulty increasing left to right:
+
+1. **Synthetic barrel** (`data/synth/sweep_*`) — generated by
+   `common/synth_cylinder.py`, so the true cylinder is known *exactly*; best-case
+   conditions and perfect ground truth.
+2. **Real lab barrel** (`data/real/xtion02_crop`) — small barrel (r = 4.25 cm), Asus
+   Xtion depth camera, fully visible; real sensor noise but no occlusion.
+3. **Real drum pile** (`data/real/station1_pit_barrels`) — the survey-LiDAR pile from
+   slide 3; tumbled, buried 200 L drums, 21 hand-verified ground-truth drums (~30% of
+   the pile).
+
+Key line: synthetic clouds tell us the best case; the real pile tells us the truth.
+The three experiments (slides 8–10) walk exactly this ladder.
+
+---
+
+## Slide 6 — Four geometry-based methods implemented
 
 One plain sentence per method (the slide's whole point is that a non-expert can follow):
 
@@ -131,42 +171,40 @@ One plain sentence per method (the slide's whole point is that a non-expert can 
 4. **Efficient RANSAC** — an optimised RANSAC that searches the whole scene for shapes
    in one pass (Schnabel 2007 via CGAL; needs no proposer).
 
-Architecture diagram below the bullets shows the proposer → metric-fit split. If asked:
-RANSAC and LS share one proposer (clean fit comparison, but a shared confound);
-Efficient RANSAC removes that confound by finding cylinders directly. Key line: all
-four are LiDAR-only, no training data, identical input/output — directly comparable.
+The architecture diagram was removed in v3 (small + redundant with the pipeline
+slide). If asked about internals: RANSAC and LS share one proposer (clean fit
+comparison, but a shared confound); Efficient RANSAC removes that confound by finding
+cylinders directly. Key line: all four are LiDAR-only, no training data, identical
+input/output — directly comparable.
 
 ---
 
-## Slide 6 — How we evaluate
+## Slide 7 — How we evaluate
 
-The explanations now live **inside** the pipeline graphic (supervisor feedback): six
-boxes — data → ground truth → detection → predictions → scoring → metrics — each with
-an italic note underneath (one shared format, everything in metres; identical command
-`run_detection.sh <scene>`; same matching rule for every method; precision/recall/F1 +
-radius & axis error + runtime). Key line defines the **accuracy gate** used throughout
-the talk: a prediction counts as correct if its **direction is within 30°** and the
-true centre lies **within 10 cm** of the predicted axis. Unit discipline if asked: 3DTK
-is internally cm, Open3D/.pcd are m, the shared schema is m.
+The pipeline graphic is deliberately minimal in v3: six boxes — data → ground truth →
+detection → predictions → scoring → metrics — bold header + one short line each, no
+footnotes. The detail that used to sit under the boxes lives here instead: one shared
+format, everything in metres; identical command `run_detection.sh <scene>`; the same
+matching rule for every method; metrics are found/not-found plus radius & direction
+error (precision/recall/F1 in the harness) and runtime per scene. Key line defines the
+**accuracy gate** used throughout the talk: a prediction counts as correct if its
+**direction is within 30°** and the true centre lies **within 10 cm** of the predicted
+axis. Unit discipline if asked: 3DTK is internally cm, Open3D/.pcd are m, the shared
+schema is m.
 
 ---
 
-## Slide 7 — Experiment 1 (synthetic): setup
+## Slide 8 — Experiment 1: the synthetic noise sweep (setup + results, merged in v3)
 
-Explains the experiment properly on the slide (feedback), with a picture of the data
-(`synth_data_example.png`: the actual clouds at σ = 0.0 / 0.3 / 0.6 cm). Setup: **33
+Setup (now in the subtitle; the data set itself was already shown on slide 5): **33
 computer-generated clouds** of one barrel (r = 4.25 cm) showing a **120° visible
 strip** (like a half-hidden drum); the **only variable is Gaussian measurement noise**
 — 11 levels from 0.0 to 0.6 cm, each with 3 random repeats (`--seed` added to
 `common/synth_cylinder.py` for genuine repeats). All four methods run with identical
-default flags; scored with the standard harness. The question (key line): how much
-sensor noise can each method tolerate before it fails? Caveat to state out loud: this
-sweep varies noise at ONE occlusion level — it is a fit-robustness test, **not** an
-occlusion test (that needs Isaac Sim, slide 15).
-
----
-
-## Slide 8 — Experiment 1: results
+default flags; scored with the standard harness. Caveat to state out loud: this sweep
+varies noise at ONE occlusion level — it is a fit-robustness test, **not** an occlusion
+test (that needs Isaac Sim, slide 15). If someone wants to see noisy vs clean clouds,
+`presentation_assets/synth_data_example.png` (σ = 0.0/0.3/0.6) is a ready backup slide.
 
 Full-width big-font chart (radius error / axis error / F1 vs noise). Bullets embed the
 live-aggregated F1 from `eval/*.csv`. Per-level numbers (mean over 3 seeds, from

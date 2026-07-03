@@ -16,6 +16,17 @@ Feedback applied (supervisor review of the 2026-07-01 draft):
   - NEW: three BarrelNet slides (method + synthetic training data, epoch comparison
     laptop-CPU vs A100, detection visualisation on the real pile)
 
+v3 (2026-07-03, second feedback round from the user):
+  - intro slide said the same thing 3x -> title + images + ONE keyline only
+  - fitting explained BEFORE the covered-drums slide (general -> specific flow);
+    the "small patch fits many cylinders" message now lands on the pile slide
+  - NEW "test data" slide (synth / lab barrel / pile) BEFORE the methods slide;
+    the synthetic-experiment setup slide is merged into the results slide
+  - methods slide: architecture diagram + "details on request" subtitle removed
+  - pipeline_flow.png regenerated without the italic per-box footnotes
+  - later slides de-duplicated (BarrelNet caption vs bullet, limits vs Exp-2 noise
+    bullet)
+
 Run AFTER:
   - researchwrite/make_eval_figures.py   (intro/fitting/pipeline/synth-data/barrelnet figs)
   - eval/plot_noise_sweep.py             (synth_noise_sweep.png, big-font version)
@@ -255,8 +266,7 @@ add_para(tf2, f"{PRESENTER}   ·   supervisor: {SUPERVISOR}   ·   {DATELINE}",
 # 1. INTRO — THE BIN-PICKING PROBLEM
 # =====================================================================
 s = slide()
-title_band(s, "The bin-picking problem",
-           "A robot must pick objects out of an unordered pile")
+title_band(s, "The bin-picking problem")
 ai1 = os.path.join(ASSETS, "binpicking_ai_1.png")
 ai2 = os.path.join(ASSETS, "binpicking_ai_2.png")
 if os.path.isfile(ai1) and os.path.isfile(ai2):
@@ -270,23 +280,7 @@ keyline(s, "Before the robot can grasp anything, it must know exactly "
 footer(s, 1)
 
 # =====================================================================
-# 2. INTRO — AND OUR OBJECTS ARE ALSO COVERED
-# =====================================================================
-s = slide()
-title_band(s, "Our case is harder: the objects are covered",
-           "Real scan: 200-litre steel drums, tumbled and partially buried")
-pic_fit(s, os.path.join(ASSETS, "station1_pile_raw.png"),
-        Inches(0.4), Inches(1.5), Inches(9.0), Inches(4.8))
-tf = box(s, Inches(9.55), Inches(1.7), Inches(3.55), Inches(4.6))
-bullet(tf, "Drums lie in arbitrary directions.", size=19, first=True)
-bullet(tf, "Sand and other drums hide most of each drum.", size=19)
-bullet(tf, "The sensor sees the pile from one side only.", size=19)
-keyline(s, "Each drum shows the sensor only a small patch of its surface.",
-        t=Inches(6.45), color=AMBER)
-footer(s, 2)
-
-# =====================================================================
-# 3. WHAT "FITTING" MEANS
+# 2. WHAT "FITTING" MEANS (general, before our specific case)
 # =====================================================================
 s = slide()
 title_band(s, "Our task: fit a cylinder to the visible points",
@@ -294,9 +288,24 @@ title_band(s, "Our task: fit a cylinder to the visible points",
            "the measured points as well as possible")
 pic_fit(s, os.path.join(ASSETS, "fitting_explained.png"),
         Inches(0.4), Inches(1.55), Inches(12.55), Inches(4.7))
-keyline(s, "The less of the barrel we see, the more cylinders explain the "
-           "same points — that is the core difficulty.", t=Inches(6.45),
-        color=AMBER)
+keyline(s, "With a full view, fitting is easy — the difficulty starts when "
+           "most of the object is hidden.", t=Inches(6.45))
+footer(s, 2)
+
+# =====================================================================
+# 3. OUR CASE — THE DRUMS ARE COVERED
+# =====================================================================
+s = slide()
+title_band(s, "Our case is harder: the drums are covered",
+           "Real scan: 200-litre steel drums, tumbled and partially buried")
+pic_fit(s, os.path.join(ASSETS, "station1_pile_raw.png"),
+        Inches(0.4), Inches(1.5), Inches(9.0), Inches(4.8))
+tf = box(s, Inches(9.55), Inches(1.7), Inches(3.55), Inches(4.6))
+bullet(tf, "Drums lie in arbitrary directions.", size=19, first=True)
+bullet(tf, "Sand and other drums hide most of each drum.", size=19)
+bullet(tf, "The sensor sees the pile from one side only.", size=19)
+keyline(s, "Each drum shows only a small patch — and a small patch fits "
+           "many different cylinders.", t=Inches(6.45), color=AMBER)
 footer(s, 3)
 
 # =====================================================================
@@ -341,33 +350,44 @@ for i, (name, col, idea, pro, con) in enumerate(fam):
     setp(tf.paragraphs[0], idea, size=17, color=DARK, space_after=14)
     add_para(tf, "+ " + pro, size=17, bold=True, color=GREEN, space_after=12)
     add_para(tf, "− " + con, size=17, bold=True, color=RED)
-keyline(s, "Plan: start with the geometry-based family (no data needed), "
-           "then add learning and fusion as data arrives.", t=Inches(6.45))
+keyline(s, "We compare all three families on the same data — geometry "
+           "first, since it needs no training data.", t=Inches(6.45))
 footer(s, 4)
 
 # =====================================================================
-# 5. METHODS CHOSEN (4 geometric detectors)
+# 5. THE TEST DATA (before the methods — easy to hard)
 # =====================================================================
 s = slide()
-title_band(s, "Four geometry-based methods implemented",
-           "Each explained in one sentence — details on request")
-tf = box(s, Inches(0.5), Inches(1.55), Inches(12.4), Inches(2.7))
-bullet(tf, "3DTK Hough (baseline) — every point votes for the cylinders it "
-           "could lie on; the strongest vote wins.", size=19, first=True)
-bullet(tf, "RANSAC fit — try many random small point samples, keep the "
-           "cylinder most points agree with.", size=19)
-bullet(tf, "Least-squares fit — start from a rough guess, then adjust the "
-           "cylinder until it matches the points best.", size=19)
-bullet(tf, "Efficient RANSAC — a faster RANSAC variant that searches the "
-           "whole scene for shapes in one pass.", size=19)
-pic_fit(s, os.path.join(ASSETS, "architecture_diagram.png"),
-        Inches(1.9), Inches(4.35), Inches(9.5), Inches(2.05))
-keyline(s, "All four: LiDAR points only · no training data · identical input "
-           "and output — directly comparable.", t=Inches(6.5))
+title_band(s, "The data we test every method on",
+           "Three data sets — difficulty increases left to right")
+pic_fit(s, os.path.join(ASSETS, "test_data_overview.png"),
+        Inches(0.3), Inches(1.6), Inches(12.7), Inches(4.6))
+keyline(s, "Synthetic clouds tell us the best case; the real pile tells us "
+           "the truth.", t=Inches(6.45))
 footer(s, 5)
 
 # =====================================================================
-# 6. HOW WE EVALUATE
+# 6. METHODS CHOSEN (4 geometric detectors)
+# =====================================================================
+s = slide()
+title_band(s, "Four geometry-based methods implemented")
+tf = box(s, Inches(0.5), Inches(1.8), Inches(12.4), Inches(4.4))
+bullet(tf, "3DTK Hough (baseline) — every point votes for the cylinders it "
+           "could lie on; the strongest vote wins.", size=21, space_after=22,
+       first=True)
+bullet(tf, "RANSAC fit — try many random small point samples, keep the "
+           "cylinder most points agree with.", size=21, space_after=22)
+bullet(tf, "Least-squares fit — start from a rough guess, then adjust the "
+           "cylinder until it matches the points best.", size=21,
+       space_after=22)
+bullet(tf, "Efficient RANSAC — a faster RANSAC variant that searches the "
+           "whole scene for shapes in one pass.", size=21, space_after=22)
+keyline(s, "All four: LiDAR points only · no training data · identical input "
+           "and output — directly comparable.", t=Inches(6.5))
+footer(s, 6)
+
+# =====================================================================
+# 7. HOW WE EVALUATE
 # =====================================================================
 s = slide()
 title_band(s, "How we evaluate — one pipeline for every method")
@@ -375,32 +395,16 @@ pic_fit(s, os.path.join(ASSETS, "pipeline_flow.png"),
         Inches(0.3), Inches(1.7), Inches(12.7), Inches(4.4))
 keyline(s, "A prediction counts as correct if direction is within 30° and "
            "the centre within 10 cm of the true drum.", t=Inches(6.4))
-footer(s, 6)
-
-# =====================================================================
-# 7. SYNTHETIC EXPERIMENT — SETUP
-# =====================================================================
-s = slide()
-title_band(s, "Experiment 1 — computer-generated test clouds",
-           "Controlled conditions: we know the true cylinder exactly")
-pic_fit(s, os.path.join(ASSETS, "synth_data_example.png"),
-        Inches(0.4), Inches(1.5), Inches(12.55), Inches(3.4))
-tf = box(s, Inches(0.6), Inches(5.0), Inches(12.2), Inches(1.5))
-bullet(tf, "33 clouds of one barrel: only a 120° strip is visible "
-           "(like a real half-hidden drum).", size=19, first=True)
-bullet(tf, "Only the measurement noise changes: 11 levels × 3 random repeats.",
-       size=19)
-keyline(s, "Question: how much sensor noise can each method tolerate before "
-           "it fails?", t=Inches(6.5))
 footer(s, 7)
 
 # =====================================================================
-# 8. SYNTHETIC EXPERIMENT — RESULTS
+# 8. SYNTHETIC EXPERIMENT (setup folded into subtitle; data set shown
+#    already on the test-data slide)
 # =====================================================================
 s = slide()
-title_band(s, "Experiment 1 — results",
-           "Lower error is better; F1 = 1 means the barrel was always found, "
-           "with no false alarms")
+title_band(s, "Experiment 1 — how much noise can each method take?",
+           "The synthetic barrel (120° visible) at 11 noise levels × "
+           "3 repeats = 33 test clouds")
 pic_fit(s, os.path.join(ASSETS, "synth_noise_sweep.png"),
         Inches(0.3), Inches(1.45), Inches(12.75), Inches(4.1))
 tf = box(s, Inches(0.6), Inches(5.55), Inches(12.2), Inches(1.5))
@@ -417,8 +421,8 @@ footer(s, 8)
 # 9. REAL DATA — CLEAN LAB BARREL
 # =====================================================================
 s = slide()
-title_band(s, "Experiment 2 — a real barrel, no occlusion",
-           "Small lab barrel (radius 4.25 cm) seen by a depth camera")
+title_band(s, "Experiment 2 — the real lab barrel, no occlusion",
+           "Depth-camera scan; true radius 4.25 cm")
 pic_fit(s, os.path.join(BILF, "real_3d_det.png"),
         Inches(0.5), Inches(1.5), Inches(3.6), Inches(4.8))
 caption(s, "camera points (coloured) with the fitted cylinder (red)",
@@ -466,12 +470,12 @@ title_band(s, "New: BarrelNet — our first learning-based method",
            "pose (centre + direction)")
 pic_fit(s, os.path.join(BNFIG, "synth_patches_sample.png"),
         Inches(0.4), Inches(1.6), Inches(12.55), Inches(3.6))
-caption(s, "four examples of the computer-generated training data: simulated "
-           "LiDAR points (red) on a drum surface (blue)",
+caption(s, "examples of the synthetic training patches: simulated LiDAR "
+           "points (red) on the drum surface (blue)",
         Inches(0.4), Inches(5.15), Inches(12.55))
 tf = box(s, Inches(0.6), Inches(5.55), Inches(12.2), Inches(0.9))
-bullet(tf, "Trained on 12,000 randomly generated partial drums — buried, "
-           "tilted, noisy, incomplete.", size=19, first=True)
+bullet(tf, "Trained on 12,000 such patches — buried, tilted, noisy, "
+           "incomplete.", size=19, first=True)
 keyline(s, "No real data in training: the 21 hand-verified real drums are "
            "kept aside as an honest test.", t=Inches(6.5), color=GREEN)
 footer(s, 11)
@@ -521,8 +525,8 @@ title_band(s, "What limits the evaluation today")
 tf = box(s, Inches(0.55), Inches(1.55), Inches(12.3), Inches(4.7))
 bullet(tf, "Our synthetic scenes still cannot imitate a truly buried, "
            "cluttered pile.", size=21, first=True)
-bullet(tf, "Real sensor noise is structured, not the clean random noise we "
-           "simulate.", size=21)
+bullet(tf, "Real sensor noise is harder than anything we simulate — "
+           "Experiment 2 showed 6–8× larger errors.", size=21)
 bullet(tf, "Only 21 real drums are labelled (~30% of the pile) — too few for "
            "strong statistics.", size=21)
 bullet(tf, "Some labels are imperfect: two drums lying end-to-end were "
