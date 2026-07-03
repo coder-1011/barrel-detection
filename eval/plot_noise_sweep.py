@@ -81,8 +81,8 @@ def main():
                          "axes.labelsize": 16, "legend.fontsize": 14,
                          "xtick.labelsize": 13, "ytick.labelsize": 13})
     fig, axes = plt.subplots(1, 3, figsize=(16, 5.4))
-    panels = [("rrmse_cm", "Radius error (cm)", "radius RMSE vs noise"),
-              ("axis_deg", "Axis error (deg)",  "axis-angle error vs noise"),
+    panels = [("rrmse_cm", "Radius error (cm)", "Radius RMSE vs noise"),
+              ("axis_deg", "Axis error (deg)",  "Axis-angle error vs noise"),
               ("f1",       "F1 score",          "F1 vs noise")]
     for ax, (key, ylab, title) in zip(axes, panels):
         for name, label, color in METHODS:

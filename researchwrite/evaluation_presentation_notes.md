@@ -54,6 +54,12 @@ supervisor / date are left as `[FILL]`.
 - Later slides de-duplicated (BarrelNet caption vs bullet; the limits slide now
   references Experiment 2 instead of restating its noise finding).
 
+**v3.1 (same day):** risks slide trimmed to short table cells (full wording stays in
+its notes section) and moved BEFORE the roadmap slide, so the deck ends problems →
+solutions → summary; a dark "Thank you! / Questions?" slide added at the end (19
+slides total); all chart/figure text and slide captions now start with a capital
+letter.
+
 ---
 
 ## Title slide
@@ -61,7 +67,7 @@ supervisor / date are left as `[FILL]`.
 The registered thesis title is **"Detection and Robotic Manipulation of Partially
 Occluded Object(s)"** — kept verbatim. Open by saying the thesis is an **empirical
 comparison of detection methods**, with manipulation as the eventual second half (not
-yet started — be honest about that when slide 16 comes up).
+yet started — be honest about that when slide 15 comes up).
 
 ---
 
@@ -203,7 +209,7 @@ strip** (like a half-hidden drum); the **only variable is Gaussian measurement n
 `common/synth_cylinder.py` for genuine repeats). All four methods run with identical
 default flags; scored with the standard harness. Caveat to state out loud: this sweep
 varies noise at ONE occlusion level — it is a fit-robustness test, **not** an occlusion
-test (that needs Isaac Sim, slide 15). If someone wants to see noisy vs clean clouds,
+test (that needs Isaac Sim, slide 16). If someone wants to see noisy vs clean clouds,
 `presentation_assets/synth_data_example.png` (σ = 0.0/0.3/0.6) is a ready backup slide.
 
 Full-width big-font chart (radius error / axis error / F1 vs noise). Bullets embed the
@@ -357,7 +363,7 @@ and better ground-truth data → segue to Isaac Sim.
 
 ---
 
-## Slide 15 — Next step: simulation closes the data gap
+## Slide 16 — Next step: simulation closes the data gap
 
 NVIDIA Isaac Sim as a ground-truthed data engine: every simulated drum comes with exact
 pose and exact burial/occlusion fraction — labels for free (Replicator; RTX LiDAR
@@ -369,7 +375,7 @@ camera+LiDAR fusion incl. a calibration-noise-injection experiment.
 
 ---
 
-## Slide 16 — Open risks, and how we deal with them
+## Slide 15 — Open risks, and how we deal with them (v3.1: moved BEFORE the roadmap; table text trimmed — full wording kept below)
 
 Feedback: don't end on problems without answers → each risk is paired with a
 mitigation in a two-column table:

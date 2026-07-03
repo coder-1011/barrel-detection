@@ -54,12 +54,12 @@ def fig_pipeline_flow():
     """Evaluation pipeline, minimal text: 6 boxes with a bold header and one
     short line each — no footnotes (per supervisor/user feedback)."""
     boxes = [
-        ("1. Data", "real scans +\nsynthetic clouds", ACCENT),
-        ("2. Ground truth", "true barrel\nposes", DARK),
-        ("3. Detection", "each method,\nsame scene", GREEN),
-        ("4. Predictions", "detected\nbarrels", DARK),
-        ("5. Scoring", "match predictions\nto ground truth", ACCENT),
-        ("6. Metrics", "found? radius &\ndirection error", GREEN),
+        ("1. Data", "Real scans +\nsynthetic clouds", ACCENT),
+        ("2. Ground truth", "True barrel\nposes", DARK),
+        ("3. Detection", "Each method,\nsame scene", GREEN),
+        ("4. Predictions", "Detected\nbarrels", DARK),
+        ("5. Scoring", "Match predictions\nto ground truth", ACCENT),
+        ("6. Metrics", "Found? radius &\ndirection error", GREEN),
     ]
     n = len(boxes)
     fig, ax = plt.subplots(figsize=(15.5, 3.4))
@@ -120,7 +120,7 @@ def _draw_bin(ax, cover=False):
         verts = [(0.6, 0.7)] + list(zip(xs, ys)) + [(9.4, 0.7)]
         ax.add_patch(Polygon(verts, closed=True, facecolor="#C9A96A",
                              edgecolor="#8a6f3d", linewidth=2, alpha=0.92))
-        ax.text(5.0, 2.0, "sand / debris", ha="center", fontsize=15,
+        ax.text(5.0, 2.0, "Sand / debris", ha="center", fontsize=15,
                 color="#5d4a26", fontweight="bold")
     # sensor looking down
     ax.add_patch(Polygon([(4.4, 8.3), (5.6, 8.3), (5.0, 7.6)], closed=True,
@@ -136,10 +136,10 @@ def _draw_bin(ax, cover=False):
 def fig_binpicking_intro():
     fig, axes = plt.subplots(1, 2, figsize=(14, 6.4))
     _draw_bin(axes[0], cover=False)
-    axes[0].set_title("objects loose in a bin", fontsize=18,
+    axes[0].set_title("Objects loose in a bin", fontsize=18,
                       fontweight="bold", color=DARK)
     _draw_bin(axes[1], cover=True)
-    axes[1].set_title("our case: also buried under sand", fontsize=18,
+    axes[1].set_title("Our case: also buried under sand", fontsize=18,
                       fontweight="bold", color=AMBER)
     fig.tight_layout()
     out = os.path.join(ASSETS, "binpicking_intro.png")
@@ -160,10 +160,10 @@ def fig_fitting_explained():
     m, b = np.polyfit(x, y, 1)
     for xi, yi in zip(x, y):
         ax.plot([xi, xi], [yi, m * xi + b], color="#bbbbbb", lw=1.6, zorder=1)
-    ax.scatter(x, y, s=55, color=ACCENT, zorder=3, label="measured points")
+    ax.scatter(x, y, s=55, color=ACCENT, zorder=3, label="Measured points")
     xs = np.array([0, 10])
     ax.plot(xs, m * xs + b, color="#B02A2A", lw=3, zorder=2,
-            label="fitted line")
+            label="Fitted line")
     ax.set_title("Fitting a line:\nfind slope + offset that\nbest match the points",
                  fontsize=16, fontweight="bold", color=DARK)
     ax.legend(fontsize=13, loc="upper left")
@@ -211,7 +211,7 @@ def fig_fitting_explained():
     ang = np.deg2rad(np.linspace(60, 120, 26))          # thin 60-degree arc
     px = r_true * np.cos(ang) + rng.normal(0, 0.012, ang.size)
     py = r_true * np.sin(ang) + rng.normal(0, 0.012, ang.size)
-    ax.scatter(px, py, s=45, color=ACCENT, zorder=5, label="visible points")
+    ax.scatter(px, py, s=45, color=ACCENT, zorder=5, label="Visible points")
     for r, cyc, col in [(1.0, 0.0, "#B02A2A"), (1.55, -0.55, "#B76E00"),
                         (0.72, 0.28, "#7b4fa6")]:
         th = np.linspace(0, 2 * np.pi, 200)
@@ -246,7 +246,7 @@ def fig_synth_data_example():
         ax = fig.add_subplot(1, 3, i + 1, projection="3d")
         ax.scatter(pts[:, 0], pts[:, 1], pts[:, 2], s=2.2, c=pts[:, 2],
                    cmap="viridis", linewidths=0)
-        ax.set_title(f"noise σ = {sig} cm  ({lab})", fontsize=17,
+        ax.set_title(f"Noise σ = {sig} cm  ({lab})", fontsize=17,
                      fontweight="bold", color=DARK)
         ax.set_axis_off()
         # equal-ish aspect
@@ -273,15 +273,15 @@ def fig_test_data_overview():
     panels = [
         (os.path.join(MASTERS, "data", "synth", "sweep_n0.30_s0",
                       "scan000.pcd"),
-         "1 · Synthetic barrel", "generated — true cylinder known exactly",
+         "1 · Synthetic barrel", "Generated — true cylinder known exactly",
          DARK, 3.0),
         (os.path.join(MASTERS, "data", "real", "xtion02_crop",
                       "scan000.pcd"),
-         "2 · Real lab barrel", "depth camera, fully visible",
+         "2 · Real lab barrel", "Depth camera, fully visible",
          ACCENT, 2.2),
         (os.path.join(MASTERS, "data", "real", "station1_pit_barrels",
                       "scan000.pcd"),
-         "3 · Real drum pile", "survey LiDAR, tumbled + buried drums",
+         "3 · Real drum pile", "Survey LiDAR, tumbled + buried drums",
          AMBER, 1.6),
     ]
     rng = np.random.default_rng(0)
@@ -339,9 +339,9 @@ def fig_barrelnet_epochs():
             ("runs/a100/train_log.csv", "A100 GPU run (full 200 epochs)",
              ACCENT)]
     fig, axes = plt.subplots(1, 3, figsize=(16, 5.0))
-    panels = [("hits", "drums found (of 21)", "Drums within the accuracy gate"),
-              ("dist", "median centre error (cm)", "How far off the centre is"),
-              ("axis", "median axis error (deg)", "How far off the direction is")]
+    panels = [("hits", "Drums found (of 21)", "Drums within the accuracy gate"),
+              ("dist", "Median centre error (cm)", "How far off the centre is"),
+              ("axis", "Median axis error (deg)", "How far off the direction is")]
     data = {}
     for rel, label, color in runs:
         path = os.path.join(MASTERS, "methods", "barrelnet", rel)
@@ -362,7 +362,7 @@ def fig_barrelnet_epochs():
         if key == "axis":
             ax.axhline(30, color="#B02A2A", ls="--", lw=2)
             ax.text(3, 30.8, "30° gate", color="#B02A2A", fontsize=13)
-        ax.set_xlabel("training epoch", fontsize=14)
+        ax.set_xlabel("Training epoch", fontsize=14)
         ax.set_ylabel(ylab, fontsize=14)
         ax.set_title(title, fontsize=16, fontweight="bold", color=DARK)
         ax.tick_params(labelsize=12)
@@ -407,7 +407,7 @@ def fig_station1_pile_raw():
     ax1.scatter(pts[:, 0], pts[:, 1], s=0.6, c=pts[:, 2], cmap="viridis",
                 linewidths=0)
     ax1.set_aspect("equal", adjustable="datalim")
-    ax1.set_title("view from above", fontsize=16, fontweight="bold", color=DARK)
+    ax1.set_title("View from above", fontsize=16, fontweight="bold", color=DARK)
     ax1.set_xlabel("x (m)", fontsize=12)
     ax1.set_ylabel("y (m)", fontsize=12)
     ax1.tick_params(labelsize=11)

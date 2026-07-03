@@ -425,7 +425,7 @@ title_band(s, "Experiment 2 — the real lab barrel, no occlusion",
            "Depth-camera scan; true radius 4.25 cm")
 pic_fit(s, os.path.join(BILF, "real_3d_det.png"),
         Inches(0.5), Inches(1.5), Inches(3.6), Inches(4.8))
-caption(s, "camera points (coloured) with the fitted cylinder (red)",
+caption(s, "Camera points (coloured) with the fitted cylinder (red)",
         Inches(0.2), Inches(6.35), Inches(4.4))
 rows = [("Method", "Barrel found?", "Radius error", "Direction error"),
         ("RANSAC fit", "yes", "0.38 cm", "1.9°"),
@@ -449,7 +449,7 @@ title_band(s, "Experiment 3 — a real occluded drum from the pile",
            "One tilted, half-buried 200 L drum cut out of the survey scan")
 pic_fit(s, os.path.join(ASSETS, "real_fits_on_cloud.png"),
         Inches(0.35), Inches(1.5), Inches(7.3), Inches(4.5))
-caption(s, "true drum (green) vs fitted cylinders on the real points",
+caption(s, "True drum (green) vs fitted cylinders on the real points",
         Inches(0.35), Inches(6.02), Inches(7.3))
 tf = box(s, Inches(7.9), Inches(1.65), Inches(5.1), Inches(4.6))
 bullet(tf, "All four methods fail the accuracy gate here.", size=19,
@@ -470,7 +470,7 @@ title_band(s, "New: BarrelNet — our first learning-based method",
            "pose (centre + direction)")
 pic_fit(s, os.path.join(BNFIG, "synth_patches_sample.png"),
         Inches(0.4), Inches(1.6), Inches(12.55), Inches(3.6))
-caption(s, "examples of the synthetic training patches: simulated LiDAR "
+caption(s, "Examples of the synthetic training patches: simulated LiDAR "
            "points (red) on the drum surface (blue)",
         Inches(0.4), Inches(5.15), Inches(12.55))
 tf = box(s, Inches(0.6), Inches(5.55), Inches(12.2), Inches(0.9))
@@ -505,7 +505,7 @@ title_band(s, "BarrelNet on the real drum pile",
            "Trained purely on synthetic drums, tested on the 21 real ones")
 pic_fit(s, os.path.join(BNFIG, "station_detection.png"),
         Inches(0.3), Inches(1.45), Inches(8.2), Inches(5.0))
-caption(s, "annotated drums coloured; predicted cylinders: green = within "
+caption(s, "Annotated drums coloured; predicted cylinders: green = within "
            "gate, red = miss", Inches(0.3), Inches(6.5), Inches(8.2))
 tf = box(s, Inches(8.75), Inches(1.65), Inches(4.3), Inches(5.0))
 bullet(tf, "12 of 21 real drums located within the accuracy gate.", size=19,
@@ -536,7 +536,31 @@ keyline(s, "The evaluation machinery works — what is missing is more and "
 footer(s, 14)
 
 # =====================================================================
-# 15. FUTURE PIPELINE — SIMULATION CLOSES THE DATA GAP
+# 15. RISKS — AND HOW WE ADDRESS THEM (before the roadmap, so the deck
+#     ends problems -> solutions -> summary)
+# =====================================================================
+s = slide()
+title_band(s, "Open risks — and how we deal with them")
+rows = [
+    ("Risk", "How we deal with it"),
+    ("Accuracy collapses under occlusion",
+     "Measure it per method — that comparison IS the thesis."),
+    ("One sensor alone may not be enough",
+     "Add camera + LiDAR fusion — it degrades far more gracefully."),
+    ("Sim-trained models may not transfer",
+     "Measured: 12 of 21 real drums; next, fine-tune on a few real ones."),
+    ("Manipulation not started yet",
+     "Detection delivers exactly the pose a grasp planner needs."),
+]
+table(s, rows, Inches(0.45), Inches(1.6), Inches(12.45), Inches(4.2),
+      [Inches(5.2), Inches(7.25)], fontsize=18, head_fontsize=19)
+caption(s, "Occlusion numbers: [Shi'19] arXiv:1812.04244 · [Kumar'25] "
+           "arXiv:2511.04347 · [Wang'25] Sensors 25(9):2794",
+        Inches(0.45), Inches(6.45), Inches(12.45), size=12)
+footer(s, 15)
+
+# =====================================================================
+# 16. FUTURE PIPELINE — SIMULATION CLOSES THE DATA GAP
 # =====================================================================
 s = slide()
 title_band(s, "Next step: simulation closes the data gap",
@@ -550,34 +574,6 @@ bullet(tf, "That enables the headline experiment: detection quality as a "
            "function of how much of the drum is hidden.", size=20)
 bullet(tf, "And it unlocks the remaining families: more learned methods and "
            "camera + LiDAR fusion.", size=20)
-footer(s, 15)
-
-# =====================================================================
-# 16. RISKS — AND HOW WE ADDRESS THEM
-# =====================================================================
-s = slide()
-title_band(s, "Open risks — and how we deal with them")
-rows = [
-    ("Risk", "How we deal with it"),
-    ("Detection accuracy collapses under occlusion (seen across the field, "
-     "e.g. −47% for LiDAR-only in a 2025 study)",
-     "Measure it systematically per method (occlusion sweep) instead of "
-     "assuming — that comparison IS the thesis."),
-    ("One sensor alone may never be reliable enough",
-     "Camera + LiDAR fusion is planned; literature shows fusion degrades "
-     "far more gracefully."),
-    ("Models trained in simulation may not transfer to reality",
-     "BarrelNet already measures this transfer on 21 real drums (12/21); "
-     "next: fine-tune on a handful of real drums."),
-    ("The manipulation half of the title is not started yet",
-     "Detection outputs exactly the pose a grasp planner needs; "
-     "manipulation follows the method comparison."),
-]
-table(s, rows, Inches(0.45), Inches(1.5), Inches(12.45), Inches(4.7),
-      [Inches(5.7), Inches(6.75)], fontsize=16, head_fontsize=17)
-caption(s, "occlusion numbers: [Shi'19] arXiv:1812.04244 · [Kumar'25] "
-           "arXiv:2511.04347 · [Wang'25] Sensors 25(9):2794",
-        Inches(0.45), Inches(6.45), Inches(12.45), size=12)
 footer(s, 16)
 
 # =====================================================================
@@ -598,6 +594,18 @@ keyline(s, "Learned + simulated is the promising path for occluded drums — "
            "and we can now measure exactly how promising.", t=Inches(6.45),
         color=GREEN)
 footer(s, 17)
+
+# =====================================================================
+# 18. THANK YOU
+# =====================================================================
+s = slide()
+dark_bg(s)
+band(s, ACCENT, Inches(0.18))
+tf = box(s, Inches(0.9), Inches(2.8), Inches(11.6), Inches(2.0))
+setp(tf.paragraphs[0], "Thank you!", size=48, bold=True, color=WHITE,
+     align=PP_ALIGN.CENTER)
+add_para(tf, "Questions?", size=24, color=RGBColor(0x9F, 0xC5, 0xDD),
+         align=PP_ALIGN.CENTER)
 
 prs.save(OUT)
 print("wrote", OUT)
