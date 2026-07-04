@@ -8,6 +8,14 @@ Usage (unattended):
   .venv/bin/python methods/barrelnet/train.py \
       --data data/synth_patches/train --run methods/barrelnet/runs/run1 \
       --max-hours 6
+
+Finetune stage (label-efficiency experiment): start from a synth-trained
+checkpoint, train on the 6 real drums of real_split.json (heavily augmented,
+mixed with synth patches against forgetting), evaluate ONLY on the 15 held-out
+drums; best.pt is selected on the real metric (gate hits, then median dist):
+  .venv/bin/python methods/barrelnet/train.py \
+      --data data/synth_patches/train --run methods/barrelnet/runs/finetune6 \
+      --finetune-real --init methods/barrelnet/runs/run1/best.pt --epochs 60
 """
 import argparse, glob, json, os, time
 import numpy as np
@@ -44,6 +52,36 @@ class PatchSet(Dataset):
         return pts.astype(np.float32), ax.astype(np.float32), ctr.astype(np.float32)
 
 
+class RealPatchSet(Dataset):
+    """Augmented patches from a few real drums (the finetune stage). Each item:
+    random drum -> random crop (keep 50-100% of points) -> resample to npoints
+    -> random z-rotation + jitter. The point-on-axis label follows the synth
+    convention: nearest point on the GT axis to the sampled patch centroid."""
+
+    def __init__(self, drums, npoints, virtual_len=2048):
+        self.drums = drums              # list of (id, pts, axis, center), meters
+        self.npoints = npoints
+        self.virtual_len = virtual_len
+
+    def __len__(self):
+        return self.virtual_len
+
+    def __getitem__(self, i):
+        _id, P, ax, ctr = self.drums[np.random.randint(len(self.drums))]
+        keep = np.random.choice(len(P), max(60, int(len(P) * np.random.uniform(0.5, 1.0))),
+                                replace=False)
+        pts = P[np.random.choice(keep, self.npoints, replace=len(keep) < self.npoints)]
+        cen = pts.mean(0)
+        poa = ctr + ((cen - ctr) @ ax) * ax
+        pts, poa = (pts - cen) / SCALE, (poa - cen) / SCALE
+        th = np.random.uniform(0, 2 * np.pi)
+        c, s = np.cos(th), np.sin(th)
+        Rz = np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]], np.float32)
+        pts, a, poa = pts @ Rz.T, ax @ Rz.T, poa @ Rz.T
+        pts = pts + np.random.normal(0, 0.004, pts.shape)
+        return pts.astype(np.float32), a.astype(np.float32), poa.astype(np.float32)
+
+
 class PointNetReg(nn.Module):
     def __init__(self):
         super().__init__()
@@ -69,7 +107,7 @@ def axis_loss(pred, gt):                # sign-symmetric
 
 
 def load_real():
-    """The 21 verified station1 drums -> (patch, axis, center) in meters."""
+    """The 21 verified station1 drums -> (id, patch, axis, center) in meters."""
     scene = os.path.join(MASTERS, "data/real/station1_pit_barrels")
     gt = json.load(open(os.path.join(scene, "gt.json")))["barrels"]
     out = []
@@ -80,7 +118,7 @@ def load_real():
         pts = np.loadtxt(f, dtype=np.float32)
         if pts.ndim != 2 or len(pts) < 60:
             continue
-        out.append((pts, np.array(b["axis"], np.float32),
+        out.append((b["id"], pts, np.array(b["axis"], np.float32),
                     np.array(b["center"], np.float32)))
     return out
 
@@ -89,7 +127,7 @@ def load_real():
 def eval_real(model, real, npoints, dev):
     model.eval()
     angs, dists = [], []
-    for pts, ax_gt, ctr_gt in real:
+    for _id, pts, ax_gt, ctr_gt in real:
         idx = np.random.default_rng(0).choice(
             len(pts), npoints, replace=len(pts) < npoints)
         p = pts[idx]
@@ -113,11 +151,25 @@ def main():
     ap.add_argument("--run", required=True, help="output dir (ckpts, log)")
     ap.add_argument("--epochs", type=int, default=200)
     ap.add_argument("--batch", type=int, default=64)
-    ap.add_argument("--lr", type=float, default=1e-3)
+    ap.add_argument("--lr", type=float, default=None,
+                    help="default 1e-3, or 1e-4 with --finetune-real")
     ap.add_argument("--val-frac", type=float, default=0.1)
     ap.add_argument("--max-hours", type=float, default=8.0)
     ap.add_argument("--threads", type=int, default=12)
+    ap.add_argument("--finetune-real", action="store_true",
+                    help="finetune on the real_split.json 'finetune' drums; "
+                         "eval only the held-out 'eval' drums")
+    ap.add_argument("--init", default=None,
+                    help="checkpoint to initialize weights from (ignored when "
+                         "the run dir already has a last.pt to resume)")
+    ap.add_argument("--split",
+                    default=os.path.join(MASTERS, "methods/barrelnet/real_split.json"))
+    ap.add_argument("--real-virtual", type=int, default=2048,
+                    help="augmented real samples per finetune epoch")
+    ap.add_argument("--synth-keep", type=int, default=8192,
+                    help="synth patches mixed into each finetune epoch")
     args = ap.parse_args()
+    args.lr = args.lr or (1e-4 if args.finetune_real else 1e-3)
     torch.set_num_threads(args.threads)
     dev = "cuda" if torch.cuda.is_available() else "cpu"
     print(f"device: {dev}", flush=True)
@@ -130,29 +182,56 @@ def main():
     files = sorted(glob.glob(os.path.join(args.data, "patches_*.npz")))
     assert files, f"no patches_*.npz in {args.data} — run gen_synth_patches.py first"
     full = PatchSet(files, train=True)
+    npoints = full.P.shape[1]
     n_val = max(64, int(len(full) * args.val_frac))
     g = torch.Generator().manual_seed(0)
     tr, va = torch.utils.data.random_split(full, [len(full) - n_val, n_val], generator=g)
     va.dataset = PatchSet(files, train=False)   # no augmentation on val
-    print(f"train {len(tr)}  val {n_val}  real {len(load_real())} drums", flush=True)
-    tl = DataLoader(tr, batch_size=args.batch, shuffle=True, num_workers=2)
+
+    real_all = load_real()
+    if args.finetune_real:
+        split = json.load(open(args.split))
+        ft_ids, ev_ids = set(split["finetune"]), set(split["eval"])
+        real_ft = [r for r in real_all if r[0] in ft_ids]
+        real = [r for r in real_all if r[0] in ev_ids]
+        keep = torch.randperm(len(tr),
+                              generator=torch.Generator().manual_seed(1))
+        train_set = torch.utils.data.ConcatDataset(
+            [RealPatchSet(real_ft, npoints, args.real_virtual),
+             torch.utils.data.Subset(tr, keep[:args.synth_keep].tolist())])
+        print(f"FINETUNE: {len(real_ft)} real drums x{args.real_virtual} virtual "
+              f"+ {min(args.synth_keep, len(tr))} synth / epoch; "
+              f"eval on {len(real)} HELD-OUT drums", flush=True)
+    else:
+        real, train_set = real_all, tr
+        print(f"train {len(tr)}  val {n_val}  real {len(real)} drums", flush=True)
+
+    def _winit(_):
+        np.random.seed(torch.initial_seed() % 2**32)
+    tl = DataLoader(train_set, batch_size=args.batch, shuffle=True, num_workers=2,
+                    worker_init_fn=_winit)
     vl = DataLoader(va, batch_size=args.batch, num_workers=2)
-    real = load_real()
 
     model = PointNetReg().to(dev)
     opt = torch.optim.Adam(model.parameters(), lr=args.lr)
-    sched = torch.optim.lr_scheduler.StepLR(opt, 40, 0.5)
+    sched = torch.optim.lr_scheduler.StepLR(opt, 20 if args.finetune_real else 40, 0.5)
     start_ep, best = 0, 1e9
+    best_hits, best_dist = -1, 1e9              # finetune: select best.pt on real
     ck = os.path.join(args.run, "last.pt")
     if os.path.exists(ck):                       # resume
         st = torch.load(ck, map_location=dev)
         model.load_state_dict(st["model"]); opt.load_state_dict(st["opt"])
         sched.load_state_dict(st["sched"]); start_ep = st["epoch"] + 1
         best = st.get("best", 1e9)
+        best_hits = st.get("best_hits", -1); best_dist = st.get("best_dist", 1e9)
         print(f"resumed at epoch {start_ep}", flush=True)
+    elif args.init:
+        st = torch.load(args.init, map_location=dev)
+        model.load_state_dict(st["model"])
+        print(f"initialized weights from {args.init} "
+              f"(epoch {st.get('epoch', '?')})", flush=True)
 
     t0 = time.time()
-    npoints = full.P.shape[1]
     for ep in range(start_ep, args.epochs):
         model.train(); tot = 0.0
         for pts, ax, ctr in tl:
@@ -163,7 +242,7 @@ def main():
             loss.backward(); opt.step()
             tot += float(loss.detach()) * len(pts)
         sched.step()
-        tr_loss = tot / len(tr)
+        tr_loss = tot / len(train_set)
 
         model.eval(); vtot, vang = 0.0, []
         with torch.no_grad():
@@ -183,12 +262,24 @@ def main():
               f"val-axis {np.mean(vang):5.2f}°  REAL med-axis {amed:5.1f}° "
               f"med-dist {dmed*100:4.1f}cm gate-hits {hits}/{nreal}  [{el:.0f} min]",
               flush=True)
+        if args.finetune_real:
+            # synth val-loss is a bad synth->real proxy: select on the real metric
+            improved = hits > best_hits or (hits == best_hits and dmed < best_dist)
+            if improved:
+                best_hits, best_dist = hits, dmed
+        else:
+            improved = v_loss < best
+            if improved:
+                best = v_loss
         st = dict(model=model.state_dict(), opt=opt.state_dict(),
-                  sched=sched.state_dict(), epoch=ep, best=best)
+                  sched=sched.state_dict(), epoch=ep, best=best,
+                  best_hits=best_hits, best_dist=best_dist)
         torch.save(st, ck)
-        if v_loss < best:
-            best = v_loss; st["best"] = best
+        if improved:
             torch.save(st, os.path.join(args.run, "best.pt"))
+            if args.finetune_real:
+                print(f"  -> new best on real: {hits}/{nreal} hits, "
+                      f"med-dist {dmed*100:.1f}cm", flush=True)
         if el > args.max_hours * 60:
             print("time budget reached — stopping cleanly", flush=True)
             break

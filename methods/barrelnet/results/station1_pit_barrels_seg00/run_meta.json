@@ -1,0 +1,10 @@
+{
+  "scene": "station1_pit_barrels_seg00",
+  "method": "barrelnet",
+  "timestamp": "2026-07-04T14:35:20",
+  "scene_dir": "/home/bharath/Projects/masters/data/real/station1_pit_barrels_seg00",
+  "run_log": "/home/bharath/Projects/masters/methods/barrelnet/results/station1_pit_barrels_seg00/run.log",
+  "detector": "methods/barrelnet/detect.py",
+  "extra_args": [],
+  "torch_version": "2.12.1+cpu"
+}

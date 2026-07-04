@@ -1,42 +1,74 @@
-# barrelnet — learned drum-pose regressor (method #5, WIP)
+# barrelnet — learned drum-pose regressor (method #5)
 
 BarrelNet-style (Yan et al., OCEANS 2024) supervised fit: a pure-PyTorch PointNet
 regresses the drum **axis** (sign-symmetric) and the **nearest point on the axis**
 from a single-drum patch. Radius stays the 0.286 m prior. Trained on synthetic
-patches, evaluated against the 21 human-verified station1 drums. CPU-only
-(AMD laptop) and fully offline once `.venv` has torch.
+patches, evaluated against the 21 human-verified station1 drums. Runs on CPU
+(laptop) or CUDA (A100 conda env `barrelnet`, cu121 wheels).
 
 ```
 gen_synth_patches.py   # randomized patches: tilt/arc 60-300°/noise/burial/caps/
                        # clutter/scan-line spacing  -> data/synth_patches/ (gitignored)
 train.py               # trains, checkpoints (last.pt/best.pt), RESUMES automatically,
-                       # logs runs/<run>/train_log.csv, evals the 21 real drums/epoch
-run_offline.sh         # unattended: generate 4x3000 patches if missing -> train 8 h
+                       # logs runs/<run>/train_log.csv; --finetune-real = 6/15 stage
+infer.py               # shared inference: TTA ensemble + hybrid center refine
+predict_station.py     # per-drum table on the 21 real drums (--tta/--hybrid-center/--split)
+detect.py              # FULL-SCENE detector: proposer -> net -> refine -> predictions.json
+run_detection.sh       # method contract wrapper around detect.py
+run_offline.sh         # unattended synth-only training (stage 1)
+run_finetune.sh        # unattended 6-real finetune (stage 2, label-efficiency exp)
+real_split.json        # FIXED 6 finetune / 15 eval drum split — do not change
 ```
 
-Run unattended:
-```bash
-nohup methods/barrelnet/run_offline.sh > methods/barrelnet/runs/offline.log 2>&1 &
-tail -f methods/barrelnet/runs/run1/train_log.csv   # progress
-```
+## Results on the 21 verified real drums (A100 synth-only ckpt, ep180)
 
-Real-drum eval columns: `real_axis_deg_med` (median axis error vs GT),
-`real_dist_m_med` (median GT-center→predicted-axis distance),
-`real_hits` = drums passing the project's standard gate (axis ≤30°, dist ≤10 cm) —
-the same gate all four geometric methods scored **0/1** on for barrel_00.
+| inference | gate hits (axis≤30°, dist≤10 cm) | med axis | med dist |
+|---|---|---|---|
+| single pass (legacy)             | 12/21 | 14.1° | 8.6 cm |
+| + TTA-32 (subsample+rot ensemble)| 14/21 | 14.9° | 7.4 cm |
+| + hybrid center (`--hybrid-center`) | **18/21** | 14.9° | **3.1 cm** |
+
+The net's axis is its strength (19/21 within 30° with TTA); its position head is
+the bottleneck. The **hybrid center** = radius-locked Gauss-Newton circle fit in
+the plane ⊥ the predicted axis (falls back to the net's point-on-axis under 200
+pts). Remaining misses: drum 1 (115 pts, sparse), drums 5/20 (axis > 30°,
+merged/hard). Caveat: GT centers were themselves produced by radius-locked fits
+(different axis source), so center agreement is partly methodological.
+
+## Full-scene detection (`run_detection.sh`, 2026-07-04)
+
+Sliding-window fixed-R RANSAC proposer (generalized from
+`candidates/tools/find_drums.py`) → shell patch → net pose (TTA-32) → hybrid
+center → re-score against the cloud (inliers/coverage/extent) → NMS.
+
+On `station1_pit_barrels`: **recall 16/21 (0.76), mean axis 12.7°, ~96 s** — the
+first non-zero full-pile score by any method (the 4 geometric methods were F1=0
+even on the segmented single drum). 64 detections total ≈ the user's ~70-drum
+pile estimate; precision is NOT measurable here (GT is ~30 % partial — unlabeled
+detections are often real drums). Map: `figures/station_full_detect.png`.
 
 ## Training plan (fixed with the user 2026-07-02 — don't change silently)
 
-1. **Train on synthetic patches only.** The generator's randomization + dataloader
-   augmentation is the data variety; the **21 verified station1 drums are the
-   held-out real test set** (evaluated every epoch) and must **never** enter
-   training — they are the project's only measure of synth→real transfer.
-2. Optional later stage: **finetune on a small real split** (e.g. 6 drums augmented,
-   evaluate on the remaining 15) = the label-efficiency experiment
-   (`--finetune-real`, not yet implemented).
-3. Runs anywhere: trainer auto-picks CUDA (A100: venv + `pip install torch numpy`,
-   then the same `run_offline.sh` line with `nohup … & disown` or tmux) and
-   auto-resumes from `runs/<run>/last.pt` on rerun.
+1. **Stage 1 — synth only.** The 21 verified station1 drums are the held-out real
+   test set, never trained on. (Done: A100 200-epoch run, converged.)
+2. **Stage 2 — label-efficiency finetune** (`--finetune-real`): start from the
+   stage-1 checkpoint, train on the 6 drums in `real_split.json` (heavy
+   augmentation + synth mix against forgetting), evaluate ONLY on the 15
+   held-out drums. best.pt is selected on the real gate-hit metric (synth
+   val-loss is a bad synth→real proxy). NB: selection uses the same 15 drums it
+   reports (no third split at n=21) — quote last.pt as the selection-free number.
+3. Runs anywhere: trainer auto-picks CUDA and auto-resumes from `runs/<run>/last.pt`.
 
-TODO to make it a full method: `run_detection.sh` contract wrapper (proposer →
-patch → net → predictions.json) so `eval/evaluate.py` can score it.
+Launch stage 2 on the A100 (synth ckpt lives in `runs/run1` there):
+```bash
+PY=/media/students/bharath/miniforge3/envs/barrelnet/bin/python \
+  nohup methods/barrelnet/run_finetune.sh > methods/barrelnet/runs/finetune.log 2>&1 &
+tail -f methods/barrelnet/runs/finetune6/train_log.csv
+```
+On the laptop use `INIT=methods/barrelnet/runs/a100/best.pt` instead.
+
+Baselines the finetune must beat on the eval-15 (synth-only ckpt): 9/15
+single-pass, 10/15 TTA-32, **14/15 TTA-32 + hybrid center** (only sparse drum 1
+missing — with hybrid inference the gate metric is nearly saturated, so judge
+the finetune mainly on median axis error / dist and on drum 1). A 3-epoch CPU
+smoke test already reached 12/15 with TTA alone.

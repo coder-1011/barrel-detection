@@ -1,0 +1,6 @@
+{
+  "note": "Fixed 6/15 split of the 21 verified station1_pit_barrels drums for the label-efficiency finetune experiment (train.py --finetune-real). The 6 finetune drums were chosen by a label-agnostic deterministic rule: sort the 21 drums by wall-point count (segments_auto patch size) and take evenly spaced ranks 1,4,8,11,14,19 - spanning sparse (350 pts) to dense (3503 pts). Never change this split without re-running all finetune experiments.",
+  "rule": "sorted by n_wall_points ascending, ranks [1,4,8,11,14,19] of 0..20",
+  "finetune": [11, 18, 19, 6, 5, 20],
+  "eval": [0, 1, 2, 3, 4, 7, 8, 9, 10, 12, 13, 14, 15, 16, 17]
+}
