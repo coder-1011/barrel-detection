@@ -1,4 +1,4 @@
 106,905 pts, normals done
 86 merged proposals
-64 detections after refine+gate+NMS
-wrote /home/bharath/Projects/masters/methods/barrelnet/results/station1_pit_barrels/predictions.json  (64 detections, 95.5 s)
+65 detections after refine+gate+NMS
+wrote /home/bharath/Projects/masters/methods/barrelnet/results/station1_pit_barrels/predictions.json  (65 detections, 99.7 s)

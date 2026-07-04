@@ -72,3 +72,14 @@ single-pass, 10/15 TTA-32, **14/15 TTA-32 + hybrid center** (only sparse drum 1
 missing — with hybrid inference the gate metric is nearly saturated, so judge
 the finetune mainly on median axis error / dist and on drum 1). A 3-epoch CPU
 smoke test already reached 12/15 with TTA alone.
+
+## Finetune RESULTS (A100 60-epoch run `runs/finetune6`, 2026-07-05)
+
+On the 15 held-out drums (best.pt ≡ last.pt): **median axis 13.1°→11.3°**, net
+position clearly better (TTA dist median 7.3→6.1 cm; TTA gate 10→11/15), drum 1
+closer (26→23 cm). Under TTA+hybrid the gate reads 13/15 vs 14/15 — borderline
+drum 15 slipped 9.6→10.9 cm; medians are equal (2.3 vs 2.2 cm). **Where it
+clearly pays: the full-pile detector — recall 18/21 (0.86) vs 16/21 synth-only**
+(caveat: 6 of the 21 are its finetune drums). Figure:
+`figures/station_full_detect_3d.png` (top-down + 3D, green = matched GT,
+orange = candidate drums on the unannotated ~70 %).

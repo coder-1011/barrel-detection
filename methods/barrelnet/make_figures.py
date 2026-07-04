@@ -158,11 +158,101 @@ def fig_station(ckpt, cyl_drums):
     return out
 
 
+# ------------------------------------------------- full-pile detections fig
+def fig_full_detections(pred_json):
+    """3D view of the pile with EVERY run_detection.sh cylinder overlaid:
+    green = matched to a verified GT drum (std gate), orange = detection on the
+    unannotated ~70% of the pile (candidate drum, not countable as FP)."""
+    sys.path.insert(0, os.path.join(MASTERS, "common"))
+    from eval_schema import load_gt, load_pred, match
+
+    full = np.asarray(o3d.io.read_point_cloud(
+        os.path.join(SCENE, "scan000.pcd")).points)
+    lab = np.load(os.path.join(SCENE, "candidates/point_labels.npz"))["labels"]
+    gt = load_gt(os.path.join(SCENE, "gt.json"))
+    pred = load_pred(pred_json)
+    pairs, _, unmatched = match(gt["barrels"], pred["detections"])
+    matched_di = {di for _, di in pairs}
+
+    drum_pts = full[lab != -1]
+    lo = drum_pts.min(0) - 0.5
+    hi = drum_pts.max(0) + 0.5
+    inbox = np.all((full >= lo) & (full <= hi), axis=1)
+    bg = full[(lab == -1) & inbox]
+    rng = np.random.default_rng(0)
+    if len(bg) > 30000:
+        bg = bg[rng.choice(len(bg), 30000, replace=False)]
+
+    fig = plt.figure(figsize=(22, 11))
+
+    # ---- left: top-down map (clearest read of what was found where) ----
+    ax = fig.add_subplot(121)
+    ax.scatter(bg[:, 0], bg[:, 1], s=1.0, c=bg[:, 2], cmap="Greys_r",
+               linewidths=0)
+    ax.scatter(drum_pts[:, 0], drum_pts[:, 1], s=1.5, c="0.45", linewidths=0)
+    th = np.linspace(0, 2 * np.pi, 60)
+    for di, d in enumerate(pred["detections"]):
+        c = d.center
+        col, lw = ("limegreen", 2.2) if di in matched_di else ("darkorange", 1.4)
+        ax.plot(c[0] + d.radius_m * np.cos(th), c[1] + d.radius_m * np.sin(th),
+                color=col, lw=lw)
+    for b in gt["barrels"]:
+        ax.plot(b.center[0], b.center[1], "+", color="crimson", ms=11, mew=2.2)
+    ax.plot([], [], "-", color="limegreen", lw=2.2, label="detection matched to GT")
+    ax.plot([], [], "-", color="darkorange", lw=1.4, label="candidate (unannotated)")
+    ax.plot([], [], "+", color="crimson", ms=11, mew=2.2,
+            label="verified GT drum center")
+    ax.legend(loc="lower left", fontsize=11)
+    ax.set_aspect("equal"); ax.set_axis_off()
+    ax.set_title("top-down", fontsize=13)
+
+    # ---- right: 3D view, matched drums emphasized ----
+    ax = fig.add_subplot(122, projection="3d")
+    ax.scatter(bg[:, 0], bg[:, 1], bg[:, 2], s=2, c="0.8",
+               alpha=0.25, depthshade=False, zorder=0)
+    cmap = matplotlib.colormaps["tab20"].resampled(21)
+    for b in gt["barrels"]:
+        dp = full[lab == b.id]
+        if len(dp):
+            ax.scatter(dp[:, 0], dp[:, 1], dp[:, 2], s=4, color=cmap(b.id),
+                       depthshade=False, zorder=3)
+    for di, d in enumerate(pred["detections"]):
+        c, a = np.array(d.center), np.array(d.axis)
+        h = (d.extent_m or 0.85) / 2
+        X, Y, Z = cyl_surface(c, a, d.radius_m, -h, h, nt=2)
+        if di in matched_di:
+            ax.plot_surface(X, Y, Z, color="limegreen", alpha=0.35,
+                            linewidth=0, shade=True, zorder=6)
+        else:
+            ax.plot_surface(X, Y, Z, color="darkorange", alpha=0.10,
+                            linewidth=0, shade=False, zorder=2)
+    clean3d(ax)
+    ax.set_xlim(lo[0], hi[0]); ax.set_ylim(lo[1], hi[1]); ax.set_zlim(lo[2], hi[2])
+    ax.set_box_aspect(tuple(hi - lo), zoom=1.35)
+    ax.view_init(elev=50, azim=-60)
+    ax.set_title("3D (matched cylinders solid green)", fontsize=13)
+
+    nm, nd, ng = len(matched_di), len(pred["detections"]), len(gt["barrels"])
+    fig.suptitle(f"BarrelNet full-pile detection — {nd} detections, "
+                 f"{nm}/{ng} verified drums matched "
+                 f"(GT covers only ~30% of the pile)", fontsize=16, y=0.98)
+    fig.tight_layout(rect=(0, 0, 1, 0.95))
+    out = os.path.join(FIGDIR, "station_full_detect_3d.png")
+    fig.savefig(out, dpi=140); plt.close(fig)
+    return out
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--ckpt", default=os.path.join(HERE, "runs/run1/last.pt"))
+    ap.add_argument("--full-detections", default=None, metavar="PRED_JSON",
+                    help="render ONLY the full-pile detections figure from a "
+                         "run_detection.sh predictions.json")
     args = ap.parse_args()
-    o1 = fig_synth(4)
-    o2 = fig_station(args.ckpt, cyl_drums=[0, 15, 16, 5])
-    print("wrote:", o1)
-    print("wrote:", o2)
+    if args.full_detections:
+        print("wrote:", fig_full_detections(args.full_detections))
+    else:
+        o1 = fig_synth(4)
+        o2 = fig_station(args.ckpt, cyl_drums=[0, 15, 16, 5])
+        print("wrote:", o1)
+        print("wrote:", o2)
