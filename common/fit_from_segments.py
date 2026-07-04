@@ -34,7 +34,11 @@ import os
 import sys
 
 import numpy as np
-import open3d as o3d
+
+try:                      # open3d only needed for .pcd/.ply IO + normal estimation;
+    import open3d as o3d  # the pure-numpy fit helpers must import without it
+except ImportError:       # (e.g. the A100 torch-only env running barrelnet/infer.py)
+    o3d = None
 
 
 def load_points(path):
