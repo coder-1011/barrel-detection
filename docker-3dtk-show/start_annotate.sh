@@ -16,7 +16,17 @@ export QT_X11_NO_MITSHM=1          # avoid Qt MIT-SHM issues under Xvfb
 
 # NB the apt (jammy/universe) CloudCompare build has NO PCD reader — point it at a PLY
 # (convert on the host first with common/pcd_to_ply.py). CloudCompare reads PLY natively.
-CLOUD="${1:-/work/data/real/station1_pit_barrels/scan000.ply}"
+# Extra args = more files to open (e.g. a detections mesh). With no args, auto-loads the
+# barrelnet detections.ply next to the pile cloud if it exists (green = matched verified
+# drum, orange = candidate, white/crimson rods = GT hit/missed; regenerate with
+# common/detections_to_ply.py).
+if [ $# -gt 0 ]; then
+    FILES=("$@")
+else
+    FILES=(/work/data/real/station1_pit_barrels/scan000.ply)
+    DET=/work/methods/barrelnet/results/station1_pit_barrels/detections.ply
+    [ -f "$DET" ] && FILES+=("$DET")
+fi
 
 # Install CloudCompare once (jammy universe). No-op if already present.
 if ! command -v CloudCompare >/dev/null 2>&1 && ! command -v cloudcompare >/dev/null 2>&1; then
@@ -42,11 +52,11 @@ x11vnc -display :99 -forever -shared -nopw -rfbport 5901 -bg -o /var/log/x11vnc.
 websockify --web=/usr/share/novnc 6080 localhost:5901 >/var/log/novnc.log 2>&1 &
 sleep 1
 
-# Launch CloudCompare GUI. (Plain GUI: open the cloud via File > Open if it doesn't
+# Launch CloudCompare GUI. (Plain GUI: open the files via File > Open if they don't
 # auto-load — '-O' would force CC's headless command mode, which we do NOT want here.)
-echo "Launching $CC on $CLOUD"
-"$CC" "$CLOUD" >/var/log/cloudcompare.log 2>&1 &
+echo "Launching $CC on: ${FILES[*]}"
+"$CC" "${FILES[@]}" >/var/log/cloudcompare.log 2>&1 &
 sleep 1
 echo "Stack up: VNC :5901, noVNC http :6080, CloudCompare launched."
-echo "If the cloud didn't open, in CloudCompare: File > Open -> $CLOUD"
+echo "If a file didn't open, in CloudCompare: File > Open -> ${FILES[*]}"
 echo "(apt CloudCompare can't read .pcd — use the .ply; make one with common/pcd_to_ply.py)"

@@ -46,6 +46,10 @@ first non-zero full-pile score by any method (the 4 geometric methods were F1=0
 even on the segmented single drum). 64 detections total ≈ the user's ~70-drum
 pile estimate; precision is NOT measurable here (GT is ~30 % partial — unlabeled
 detections are often real drums). Map: `figures/station_full_detect.png`.
+Inspect in 3D: `common/detections_to_ply.py` exports the run as a colored
+cylinder mesh (`results/<scene>/detections.ply`) for CloudCompare — the docker
+stack's `start_annotate.sh` auto-loads it next to the pile cloud (see
+`docker-3dtk-show/README.md`).
 
 ## Training plan (fixed with the user 2026-07-02 — don't change silently)
 

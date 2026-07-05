@@ -182,6 +182,40 @@ fits only those inliers. Per-barrel printout shows `n=<inliers>/<total>`.
 
 Score any method against it with `python3 eval/evaluate.py --method <name>`.
 
+## Inspect detections in 3D (CloudCompare, same stack)
+
+Any method's `predictions.json` can be overlaid on the scan as a **colored cylinder
+mesh**. On the host, export the PLY (numpy only):
+
+```bash
+.venv/bin/python common/detections_to_ply.py \
+  --pred methods/barrelnet/results/station1_pit_barrels/predictions.json \
+  --gt   data/real/station1_pit_barrels/gt.json
+# -> methods/barrelnet/results/station1_pit_barrels/detections.ply
+```
+
+Colors: **green** = detection matched to a verified GT drum (project gate:
+axis ≤ 30°, dist ≤ 10 cm), **orange** = candidate detection (unannotated pile —
+not FP until proven), thin rods = the GT axes (**white** hit, **crimson** missed).
+Cylinder radii are drawn 1 cm under the true radius so the drum-wall points stay
+visible on top of the mesh.
+
+Then start the same annotation stack — with no arguments `start_annotate.sh`
+auto-opens the pile cloud **plus** the barrelnet `detections.ply` when present
+(or pass any file list explicitly):
+
+```bash
+sudo docker exec 3dtk-annot bash /work/docker-3dtk-show/start_annotate.sh
+# or explicit:
+sudo docker exec 3dtk-annot bash /work/docker-3dtk-show/start_annotate.sh \
+  /work/data/real/station1_pit_barrels/scan000.ply \
+  /work/methods/barrelnet/results/station1_pit_barrels/detections.ply
+```
+
+In CloudCompare tick/untick the mesh in the DB tree to toggle the overlay; the
+candidates double as **annotation proposals** — segment the drums they point at to
+grow `gt.json` past the current 21.
+
 ---
 
 ## From scratch (full rebuild — reproducible)
