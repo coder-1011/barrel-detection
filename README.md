@@ -18,7 +18,9 @@ masters/
 │   ├── view_cloud.py          # Open3D viewer (pred=red, gt=green overlays)
 │   ├── pcd_to_ply.py          # export for CloudCompare annotation
 │   ├── fit_from_segments.py   # segment → radius-locked cylinder fit → gt.json
-│   └── render_fit.py          # headless fit-inspection PNGs
+│   ├── annotate_barrels.py    # GUI cap-click GT for vertical drums (needs a display)
+│   ├── detections_to_ply.py   # predictions → colored cylinder-mesh PLY (CloudCompare)
+│   └── render_fit.py          # headless fit-inspection PNGs → <scene>/renders/
 ├── data/
 │   ├── real/<scene>/          # raw clouds: scan000.{pcd,3d,pose} + optional gt.json
 │   ├── synth/<scene>/         # synthetic scenes incl. sweep_n<σ>_s<seed> noise sweep
@@ -27,7 +29,8 @@ masters/
 │   ├── 3dtk_hough/            # baseline: 3DTK detectCylinder (randomized Hough)
 │   ├── ransac_cylinder/       # shared proposer + normals2step RANSAC fit
 │   ├── ls_cylinder/           # shared proposer + nonlinear least-squares fit
-│   └── efficient_ransac/      # Schnabel 2007 via CGAL (self-contained, C++)
+│   ├── efficient_ransac/      # Schnabel 2007 via CGAL (self-contained, C++)
+│   └── barrelnet/             # learned: PointNet pose regressor + sliding-window proposer
 ├── eval/              # evaluate.py + per-method result CSVs + plot_noise_sweep.py
 ├── researchwrite/     # thesis-writing material: survey, decks, notes, figures
 └── docker-3dtk-show/  # Docker recipe for 3DTK `show` viewer + CloudCompare annotation
@@ -61,8 +64,10 @@ methods/ransac_cylinder/run_detection.sh  data/synth/synth_half
 methods/ls_cylinder/run_detection.sh      data/synth/synth_half
 methods/efficient_ransac/build.sh         # once (CGAL, g++)
 methods/efficient_ransac/run_detection.sh data/synth/synth_half
+methods/barrelnet/run_detection.sh        data/real/station1_pit_barrels  # learned; see its README
 
-# score a method across all scenes that have gt.json
+# score a method across all scenes that have gt.json (add --csv eval/<method>.csv
+# to refresh its scoreboard file)
 python3 eval/evaluate.py --method ransac_cylinder
 
 # visualize a fit vs ground truth
@@ -83,9 +88,22 @@ pyransac3d, cylinder-fitting) — run pipeline python via `.venv/bin/python` or 
 - `data/real/xtion01–03` (+ `_crop` variants) — single Xtion depth frames of a small
   8.5 cm-diameter lab barrel (renamed 2026-07-02 from `data`, `data2`, `data2_crop`, …).
 - `data/real/station1_pit_barrels` — survey-LiDAR sub-scene of a tumbled, partially
-  buried 200 L drum pile (r = 0.286 m); GT annotated via CloudCompare +
-  `common/fit_from_segments.py`. `_seg00` is a single-drum mini-scene cut from it.
+  buried 200 L drum pile (r = 0.286 m); `gt.json` holds **21 human-verified drums**
+  (semi-auto RANSAC proposals reviewed in CloudCompare — **partial GT, ~30 % of the
+  pile: FP/precision are not meaningful on this scene**). Per-point instance labels +
+  per-drum patches in `candidates/`. `_seg00` is a single-drum mini-scene cut from it.
   The 111 MB raw parent scan (`station1_deployment1_scan8/`) is local-only.
+
+## Results snapshot (2026-07-05)
+
+- **Synthetic noise sweep** (33 scenes, σ 0–0.6 cm): `ransac_cylinder` and
+  `ls_cylinder` hold F1 = 1.0 across the whole sweep; `efficient_ransac` is fastest
+  but degrades with noise; `3dtk_hough` is erratic (unseeded randomized Hough).
+- **Real occluded pile** (`station1_pit_barrels`, 21-drum partial GT): the geometric
+  methods score F1 = 0 untuned even on the single-drum mini-scene; **`barrelnet`
+  reaches recall 18/21 (0.86)** with the 6-real-drum finetuned checkpoint
+  (16/21 synth-only), matched-axis error ≈ 13°.
+- Per-scene numbers: `eval/<method>.csv`; noise-sweep chart via `eval/plot_noise_sweep.py`.
 
 ## Units
 

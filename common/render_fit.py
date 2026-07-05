@@ -9,7 +9,8 @@ per-barrel diagnostic (cross-section vs the fitted circle + shell-residual-along
 
 USAGE (host, project .venv):
   .venv/bin/python common/render_fit.py --scene data/real/station1_pit_barrels
-  # -> <scene>/fit_<segmentstem>.png  and  <scene>/fit_on_full_cloud.png
+  # -> <scene>/renders/fit_<segmentstem>.png  and  <scene>/renders/fit_on_full_cloud.png
+  # (renders/ keeps the scene dir itself raw-clouds-only, per the data/ contract)
 """
 import argparse
 import glob
@@ -112,17 +113,19 @@ def main():
     args = ap.parse_args()
 
     gt = json.load(open(os.path.join(args.scene, "gt.json")))["barrels"]
+    outdir = os.path.join(args.scene, "renders")
+    os.makedirs(outdir, exist_ok=True)
     segfiles = sorted(f for f in glob.glob(os.path.join(args.scene, "segments", "*"))
                       if os.path.isfile(f) and not f.endswith(".json"))
     for i, b in enumerate(gt):
         if i < len(segfiles):
             stem = os.path.splitext(os.path.basename(segfiles[i]))[0]
             render_barrel(load_points(segfiles[i]), b,
-                          os.path.join(args.scene, f"fit_{stem}.png"), ransac=not args.no_ransac)
+                          os.path.join(outdir, f"fit_{stem}.png"), ransac=not args.no_ransac)
     pcd = os.path.join(args.scene, "scan000.pcd")
     if os.path.isfile(pcd):
         full = np.asarray(o3d.io.read_point_cloud(pcd).points)
-        render_full(full, gt, segfiles, os.path.join(args.scene, "fit_on_full_cloud.png"))
+        render_full(full, gt, segfiles, os.path.join(outdir, "fit_on_full_cloud.png"))
 
 
 if __name__ == "__main__":
