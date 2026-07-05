@@ -1,0 +1,10 @@
+{
+  "scene": "occl_a180_s1",
+  "method": "ls_cylinder",
+  "timestamp": "2026-07-05T19:41:42",
+  "scene_dir": "/home/bharath/Projects/masters/data/synth/occl_a180_s1",
+  "run_log": "/home/bharath/Projects/masters/methods/ls_cylinder/results/occl_a180_s1/run.log",
+  "detector": "methods/ls_cylinder/detect.py",
+  "extra_args": [],
+  "cylinder_fitting_version": "1.1.4"
+}

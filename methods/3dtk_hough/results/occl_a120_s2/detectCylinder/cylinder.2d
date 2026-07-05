@@ -1,0 +1,2 @@
+#CylinderIndex;Radius;Axis_x Axis_y lAxis_z; StartAxis_x StartAxis_y StartAxis_z;EndAxis_x EndAxis_y EndAxis_z;OrigPointOnAxis_x OrigPointOnAxis_y OrigPointOnAxis_z
+0;4.18163;0.00157237 0.999998 0.000785398;10.117 14.241 60.013;10.053 -26.262 59.982;10.0946 -0.0629982 60.0023

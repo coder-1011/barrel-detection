@@ -1,0 +1,25 @@
+{
+  "scene": "occl_a240_s0",
+  "method": "3dtk_hough",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": null,
+  "detections": [
+    {
+      "radius_m": 0.042503099999999995,
+      "axis": [
+        0.00157237,
+        0.999998,
+        0.000785398
+      ],
+      "center": [
+        0.100045,
+        -0.05962,
+        0.600015
+      ],
+      "extent_m": 0.40458060927335604,
+      "score": null,
+      "lateral_pts": 14583
+    }
+  ]
+}

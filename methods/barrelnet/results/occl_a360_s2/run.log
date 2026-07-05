@@ -1,0 +1,4 @@
+21,600 pts, normals done
+7 merged proposals
+0 detections after refine+gate+NMS
+wrote /home/bharath/Projects/masters/methods/barrelnet/results/occl_a360_s2/predictions.json  (0 detections, 13.0 s)

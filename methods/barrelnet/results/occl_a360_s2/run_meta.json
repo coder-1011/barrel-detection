@@ -1,0 +1,13 @@
+{
+  "scene": "occl_a360_s2",
+  "method": "barrelnet",
+  "timestamp": "2026-07-05T19:47:01",
+  "scene_dir": "/home/bharath/Projects/masters/data/synth/occl_a360_s2",
+  "run_log": "/home/bharath/Projects/masters/methods/barrelnet/results/occl_a360_s2/run.log",
+  "detector": "methods/barrelnet/detect.py",
+  "extra_args": [
+    "--radius",
+    "0.0425"
+  ],
+  "torch_version": "2.12.1+cpu"
+}

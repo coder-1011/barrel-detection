@@ -1,0 +1,25 @@
+{
+  "scene": "occl_a240_s1",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 0.040049343,
+  "detections": [
+    {
+      "radius_m": 0.0431709,
+      "axis": [
+        0.0257572,
+        0.999526,
+        -0.0168898
+      ],
+      "center": [
+        0.0975805,
+        -0.0595414,
+        0.600285
+      ],
+      "extent_m": 0.406853,
+      "score": null,
+      "lateral_pts": 21600
+    }
+  ]
+}

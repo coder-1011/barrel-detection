@@ -1,0 +1,25 @@
+{
+  "scene": "occl_a180_s2",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 0.071558959,
+  "detections": [
+    {
+      "radius_m": 0.045595,
+      "axis": [
+        -0.0319699,
+        0.999323,
+        0.0181875
+      ],
+      "center": [
+        0.0978649,
+        -0.0607824,
+        0.598477
+      ],
+      "extent_m": 0.406281,
+      "score": null,
+      "lateral_pts": 21600
+    }
+  ]
+}

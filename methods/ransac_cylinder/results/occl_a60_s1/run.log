@@ -1,0 +1,5 @@
+loaded 21600 pts from occl_a60_s1 [scan000.pcd (m)]
+1 candidate cluster(s)
+  cluster[0] n= 21600 fit_n= 21600  r=  3.29cm  axis=[-0.00 +1.00 +0.01]  inliers=21598  KEEP
+
+wrote 1 detection(s) -> /home/bharath/Projects/masters/methods/ransac_cylinder/results/occl_a60_s1/predictions.json  (0.37s)

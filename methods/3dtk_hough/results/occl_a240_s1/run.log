@@ -1,0 +1,168 @@
+Writing detected Cylinder to /home/bharath/Projects/masters/methods/3dtk_hough/results/occl_a240_s1/detectCylinder
+Read Parameters from File: include/detectCylinder/cylinderDetector.cfg
+paraId: ## value: Tuned
+paraId: ## value: for
+paraId: ## value: an
+paraId: ## value: 8.5
+paraId: ## value: cm-diameter
+paraId: ## value: (radius
+paraId: ## value: 4.25
+paraId: ## value: cm)
+paraId: ## value: barrel
+paraId: ## value: at
+paraId: ## value: ~60
+paraId: ## value: cm
+paraId: ## value: range.
+paraId: ## value: Units
+paraId: ## value: are
+paraId: ## value: 3DTK's
+paraId: ## value: native:
+paraId: ## value: centimeters.
+paraId: ## value: Lines
+paraId: ## value: must
+paraId: ## value: keep
+paraId: ## value: the
+paraId: ## value: leading
+paraId: ## value: '#'
+paraId: ## value: --
+paraId: ## value: that
+paraId: ## value: prefix
+paraId: ## value: IS
+paraId: ## value: the
+paraId: ## value: parameter
+paraId: ## value: key
+paraId: ## value: (see
+paraId: ## value: configFileCylinderDetector.cc).
+paraId: ## value: Axis
+paraId: ## value: discretisation
+paraId: ## value: --
+paraId: ## value: keep
+paraId: ## value: defaults
+paraId: ## value: for
+paraId: ## value: a
+paraId: ## value: single
+paraId: ## value: small
+paraId: ## value: object.
+paraId: #MAX_CYL_AXIS_NUM value: 100
+paraId: #MIN_DIFFANGLE_AXIS_DEG value: 1
+paraId: #PHI_NUM value: 1000
+paraId: #THETA_NUM value: 1000
+paraId: #WINDOWSIZE value: 20
+paraId: ## value: Cropped
+paraId: ## value: cluster
+paraId: ## value: has
+paraId: ## value: ~15k
+paraId: ## value: points
+paraId: ## value: on
+paraId: ## value: the
+paraId: ## value: barrel
+paraId: ## value: surface.
+paraId: ## value: Demand
+paraId: ## value: a
+paraId: ## value: substantial
+paraId: ## value: lateral-surface
+paraId: ## value: vote
+paraId: ## value: so
+paraId: ## value: weak
+paraId: ## value: tilted
+paraId: ## value: axes
+paraId: ## value: are
+paraId: ## value: rejected.
+paraId: #MIN_CYL_POINT_LATERAL value: 1000
+paraId: ## value: Great-circle
+paraId: ## value: distance
+paraId: ## value: (sin(angle)
+paraId: ## value: on
+paraId: ## value: the
+paraId: ## value: unit
+paraId: ## value: Gaussian
+paraId: ## value: sphere).
+paraId: ## value: 0.05
+paraId: ## value: ~=
+paraId: ## value: 3
+paraId: ## value: deg
+paraId: ## value: --
+paraId: ## value: comfortably
+paraId: ## value: above
+paraId: ## value: Xtion
+paraId: ## value: normal
+paraId: ## value: noise
+paraId: ## value: without
+paraId: ## value: admitting
+paraId: ## value: tilted
+paraId: ## value: axis
+paraId: ## value: hypotheses.
+paraId: #MAX_DIS_POINT2GREATCIRCLE value: 0.15
+paraId: ## value: Demand
+paraId: ## value: a
+paraId: ## value: strong
+paraId: ## value: circle:
+paraId: ## value: a
+paraId: ## value: real
+paraId: ## value: barrel
+paraId: ## value: projection
+paraId: ## value: has
+paraId: ## value: thousands
+paraId: ## value: of
+paraId: ## value: points.
+paraId: #MIN_POINTS_CIRCLE value: 200
+paraId: #MIN_COST_CIRCLE value: 5
+paraId: ## value: Stronger
+paraId: ## value: Hough
+paraId: ## value: consensus
+paraId: ## value: --
+paraId: ## value: 4
+paraId: ## value: votes
+paraId: ## value: for
+paraId: ## value: the
+paraId: ## value: same
+paraId: ## value: cylinder
+paraId: ## value: before
+paraId: ## value: accept.
+paraId: #VALIDATION_THRES value: 4
+paraId: ## value: Randomized
+paraId: ## value: Hough
+paraId: ## value: buckets
+paraId: ## value: --
+paraId: ## value: keep
+paraId: ## value: at
+paraId: ## value: 1
+paraId: ## value: cm;
+paraId: ## value: accepts
+paraId: ## value: any
+paraId: ## value: radius
+paraId: ## value: within
+paraId: ## value: +/-1
+paraId: ## value: cm.
+paraId: #RHT_THRES_RADIUS value: 1.0
+paraId: #RHT_THRES_XY_M value: 1.0
+paraId: #RHT_ROUND_VALUE value: 1.0
+paraId: #LS_LENGTHOFARC value: 0.15
+paraId: #LS_P_SECTOR value: 0.3
+Config File Name: include/detectCylinder/cylinderDetector.cfg
+# Max Cyl Axis: 100
+# Min points lateral surface: 1000
+Min diff angle between axis: 1
+# Phi (Akk cyl axis): 1000
+# Theta (Akk cyl axis): 1000
+Window size (Akk cyl axis): 20
+Max distance between point + great circle: 0.15
+# Min points circle (Pos. + radius): 200
+# Min cost circle (Pos. + radius): 5
+Max distance point and circle (Pos. + radius):0.1
+Validation threshold (Pos + radius): 4
+RHT Threshold radius (Pos + radius): 1
+RHT Threshold circle middle (Pos + radius): 1
+RHT Round value for akk entry (Pos + radius): 1
+LS Length of arc (Pos + radius): 0.15
+LS Min. positive circle sectors (Pos + radius): 0.3
+Cylinder Detector Created
+Scan points added
+Start detecting cylinder axis
+Sperical normals calculated
+Accumulator was created
+RHT finished
+Maxima found and sorted
+#CylinderIndex(#lateralSurfacePoints, #InlierPoints);Radius;Axis_x Axis_y lAxis_z; StartAxis_x StartAxis_y StartAxis_z;EndAxis_x EndAxis_y EndAxis_z;OrigPointOnAxis_x OrigPointOnAxis_y OrigPointOnAxis_z
+0(14585, 3585);4.24815;0.00157237 0.999998 0.000785398;10.038 14.322 60.016;9.974 -26.267 59.984;10.0157-0.062875960.0045
+Successfull closed

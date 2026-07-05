@@ -1,0 +1,8 @@
+{
+  "scene": "occl_a90_s1",
+  "method": "barrelnet",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 8.169671535491943,
+  "detections": []
+}

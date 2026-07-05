@@ -1,0 +1,10 @@
+{
+  "scene": "occl_a300_s0",
+  "method": "ransac_cylinder",
+  "timestamp": "2026-07-05T19:41:10",
+  "scene_dir": "/home/bharath/Projects/masters/data/synth/occl_a300_s0",
+  "run_log": "/home/bharath/Projects/masters/methods/ransac_cylinder/results/occl_a300_s0/run.log",
+  "detector": "methods/ransac_cylinder/detect.py",
+  "extra_args": [],
+  "pyransac3d_version": "0.6.0"
+}

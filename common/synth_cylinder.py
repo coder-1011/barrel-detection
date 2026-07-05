@@ -14,7 +14,7 @@ Usage (run from ~/masters):
   # or, to test the half-shell hypothesis directly:
   python3 common/synth_cylinder.py --out data/synth/synth_half --arc-deg 120
 """
-import argparse, os
+import argparse, json, os
 import numpy as np
 
 
@@ -78,7 +78,26 @@ def main():
                     f"POINTS {n}\nDATA ascii\n")
             np.savetxt(f, xyz_m, fmt="%.6f")
 
-    print(f"wrote {pts.shape[0]} pts to {args.out}/scan000.3d  "
+    # exact ground truth (project schema, meters) — every synth scene ships one
+    gt = {
+        "scene": os.path.basename(os.path.normpath(args.out)),
+        "source": "synthetic",
+        "sensor": "synthetic_xtion_sim",
+        "units": "m",
+        "frame": "camera_optical",
+        "barrels": [{
+            "id": 0,
+            "radius_m": args.radius_cm / 100.0,
+            "axis": [0.0, 1.0, 0.0],
+            "center": [args.cx_cm / 100.0, args.cy_cm / 100.0, args.cz_cm / 100.0],
+            "height_m": args.height_cm / 100.0,
+            "occlusion_frac": round(1.0 - args.arc_deg / 360.0, 3),
+        }],
+    }
+    with open(os.path.join(args.out, "gt.json"), "w") as f:
+        json.dump(gt, f, indent=2)
+
+    print(f"wrote {pts.shape[0]} pts to {args.out}/scan000.3d (+gt.json)  "
           f"(arc={args.arc_deg} deg, r={args.radius_cm}cm, h={args.height_cm}cm)")
 
 

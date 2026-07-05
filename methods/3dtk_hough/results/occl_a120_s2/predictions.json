@@ -1,0 +1,25 @@
+{
+  "scene": "occl_a120_s2",
+  "method": "3dtk_hough",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": null,
+  "detections": [
+    {
+      "radius_m": 0.0418163,
+      "axis": [
+        0.00157237,
+        0.999998,
+        0.000785398
+      ],
+      "center": [
+        0.10085000000000001,
+        -0.060105000000000006,
+        0.599975
+      ],
+      "extent_m": 0.405030624274264,
+      "score": null,
+      "lateral_pts": 14577
+    }
+  ]
+}

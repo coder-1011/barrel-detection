@@ -1,0 +1,16 @@
+{
+  "scene": "occl_a180_s0",
+  "method": "efficient_ransac",
+  "timestamp": "2026-07-05T19:41:51",
+  "scene_dir": "/home/bharath/Projects/masters/data/synth/occl_a180_s0",
+  "run_log": "/home/bharath/Projects/masters/methods/efficient_ransac/results/occl_a180_s0/run.log",
+  "detector": "CGAL::Shape_detection::Efficient_RANSAC (Schnabel 2007), Plane+Cylinder",
+  "params": {
+    "epsilon": 0.006,
+    "cluster_epsilon": 0.02,
+    "min_points": 1500,
+    "normal_threshold": 0.85,
+    "probability": 0.05,
+    "seed": 42
+  }
+}

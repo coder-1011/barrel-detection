@@ -1,0 +1,8 @@
+{
+  "scene": "occl_a360_s2",
+  "method": "barrelnet",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 12.996189594268799,
+  "detections": []
+}
