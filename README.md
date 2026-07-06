@@ -94,16 +94,24 @@ pyransac3d, cylinder-fitting) — run pipeline python via `.venv/bin/python` or 
   per-drum patches in `candidates/`. `_seg00` is a single-drum mini-scene cut from it.
   The 111 MB raw parent scan (`station1_deployment1_scan8/`) is local-only.
 
-## Results snapshot (2026-07-05)
+## Results snapshot (2026-07-06)
 
 - **Synthetic noise sweep** (33 scenes, σ 0–0.6 cm): `ransac_cylinder` and
   `ls_cylinder` hold F1 = 1.0 across the whole sweep; `efficient_ransac` is fastest
   but degrades with noise; `3dtk_hough` is erratic (unseeded randomized Hough).
-- **Real occluded pile** (`station1_pit_barrels`, 21-drum partial GT): the geometric
-  methods score F1 = 0 untuned even on the single-drum mini-scene; **`barrelnet`
-  reaches recall 18/21 (0.86)** with the 6-real-drum finetuned checkpoint
-  (16/21 synth-only), matched-axis error ≈ 13°.
-- Per-scene numbers: `eval/<method>.csv`; noise-sweep chart via `eval/plot_noise_sweep.py`.
+- **Synthetic occlusion sweep** (21 scenes, visible arc 360→60°):
+  `ransac_cylinder`/`ls_cylinder` keep F1 = 1.0 even at 83 % occlusion (radius error
+  grows to ~1 cm); `efficient_ransac` collapses past 75 %; `barrelnet`'s drum-trained
+  checkpoint detects nothing on the 7×-smaller barrel (scale domain shift — geometric
+  methods are scale-free, the learned one is not).
+- **Real occluded pile** (`station1_pit_barrels`, 21-drum partial GT, all methods
+  tuned for drums): **`barrelnet` recall 18/21 (0.86)** vs `ransac_cylinder`/
+  `ls_cylinder` 1/21, `efficient_ransac` and `3dtk_hough` 0/21 (Hough: ~25 min for 0
+  detections). The DBSCAN cluster proposer cannot split a contiguous tumbled pile —
+  a structural cap, and the reason barrelnet uses a sliding-window proposer.
+  Figure: `researchwrite/presentation_assets/station1_pile_methods.png`.
+- Per-scene numbers: `eval/<method>.csv`; charts via `eval/plot_noise_sweep.py`,
+  `eval/plot_occlusion_sweep.py`, `eval/plot_pile_comparison.py`.
 
 ## Units
 
