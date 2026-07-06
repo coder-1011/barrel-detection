@@ -1,0 +1,57 @@
+{
+  "scene": "station1_pit_barrels",
+  "method": "efficient_ransac",
+  "units": "m",
+  "frame": "camera_optical",
+  "runtime_s": 2.031003165,
+  "detections": [
+    {
+      "radius_m": 0.347857,
+      "axis": [
+        0.0449946,
+        0.020271,
+        0.998782
+      ],
+      "center": [
+        1.13834,
+        0.661715,
+        -14.9562
+      ],
+      "extent_m": 0.620368,
+      "score": null,
+      "lateral_pts": 1207
+    },
+    {
+      "radius_m": 0.21434,
+      "axis": [
+        0.0401176,
+        -0.00283036,
+        -0.999191
+      ],
+      "center": [
+        1.14026,
+        0.677944,
+        -15.1001
+      ],
+      "extent_m": 0.589865,
+      "score": null,
+      "lateral_pts": 1061
+    },
+    {
+      "radius_m": 0.225135,
+      "axis": [
+        -0.0185048,
+        -0.0534439,
+        0.998399
+      ],
+      "center": [
+        1.14253,
+        0.678995,
+        -15.5559
+      ],
+      "extent_m": 0.897516,
+      "score": null,
+      "lateral_pts": 1085
+    }
+  ]
+}

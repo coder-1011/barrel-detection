@@ -1,3 +1,8 @@
+wrote 106905 pts with normals -> /home/bharath/Projects/masters/methods/efficient_ransac/results/station1_pit_barrels/input_xyzn.txt
+>> cgal_ransac eps=0.012 clusEps=0.05 minPts=200 nThr=0.85 prob=0.005 seed=42
+loaded 106905 points with normals
+98 shape(s) detected
+>> detected 52 cylinder(s) in 2.031003165s
 CYL 0.0703923 1.14927 0.680574 -15.6188 0.00555116 -0.00796837 -0.999953 0.758659 3112
 CYL 0.401922 1.14971 0.677872 -15.7184 -0.0468311 0.0817921 -0.995549 0.612801 1064
 CYL 0.347857 1.13834 0.661715 -14.9562 0.0449946 0.020271 0.998782 0.620368 1207
