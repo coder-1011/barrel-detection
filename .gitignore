@@ -43,3 +43,10 @@ methods/efficient_ransac/results/*/input_xyzn.txt
 data/real/station1_deployment1_scan8/
 data/synth_patches/
 methods/barrelnet/runs/
+
+# Isaac Sim datagen: secrets & raw 3D source assets (never commit)
+secrets.env
+.vast_api_key
+*.blend
+Barrels*.zip
+datagen/isaac_sim/assets/

@@ -1,0 +1,1 @@
+mkdir -p /root/.ssh && echo 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIBPCpRrt10s2u0fnLgj/V6Bpt7Y6D64ra76YoQN5SMJ6 vast-isaac' >> /root/.ssh/authorized_keys && chmod 700 /root/.ssh && chmod 600 /root/.ssh/authorized_keys
